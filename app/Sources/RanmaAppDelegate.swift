@@ -22,8 +22,10 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    @objc private func screenParametersChanged(_ notification: Notification) {
+    @MainActor @objc private func screenParametersChanged(_ notification: Notification) {
         updateDisplayList()
+        let activeIDs = Set(NSScreen.screens.map { $0.displayID })
+        viewModel.handleDisplayChange(activeDisplayIDs: activeIDs)
     }
 
     private func updateDisplayList() {

@@ -57,6 +57,22 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     }
 
     @MainActor
+    func handleDisplayChange(activeDisplayIDs: Set<UInt32>) {
+        for (displayID, (window, _)) in windows {
+            if !activeDisplayIDs.contains(displayID) {
+                window.orderOut(nil)
+                windows.removeValue(forKey: displayID)
+            }
+        }
+
+        for displayID in activeDisplayIDs {
+            if windows[displayID] == nil, let displayNodes = nodes[displayID], !displayNodes.isEmpty {
+                refreshDisplay(displayID)
+            }
+        }
+    }
+
+    @MainActor
     private func ensureWindow(for displayID: UInt32) -> (BarWindow, BarContentView)? {
         if let existing = windows[displayID] {
             return existing

@@ -1,50 +1,120 @@
 import AppKit
 
 class BarContentView: NSView {
-    private let barHeight: CGFloat = 28
-    private let barPadding: CGFloat = 12
+    private let defaultBarHeight: CGFloat = 28
     private let itemSpacing: CGFloat = 8
+    private let containerSpacing: CGFloat = 8
     private let iconLabelGap: CGFloat = 4
-    private let iconSize: CGFloat = 14
-    private let cornerRadius: CGFloat = 10
-    private let font = NSFont.systemFont(ofSize: 12, weight: .medium)
+    private let defaultFontSize: CGFloat = 12
+    private let defaultIconSize: CGFloat = 14
 
-    private var items: [BarItem] = []
+    private var nodes: [BarNode] = []
 
     override var intrinsicContentSize: NSSize {
-        let totalWidth = WindowSizer.calculateWidth(for: items, padding: barPadding)
-        return NSSize(width: totalWidth, height: barHeight)
+        let totalWidth = WindowSizer.calculateWidth(for: nodes)
+        let height = calculateBarHeight()
+        return NSSize(width: totalWidth, height: height)
     }
 
-    func updateItems(_ newItems: [BarItem]) {
-        items = newItems
+    func updateNodes(_ newNodes: [BarNode]) {
+        nodes = newNodes
         invalidateIntrinsicContentSize()
         needsDisplay = true
     }
 
-    override func draw(_ dirtyRect: NSRect) {
-        let path = NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius)
-        NSColor(white: 0.15, alpha: 0.9).setFill()
-        path.fill()
+    private func calculateBarHeight() -> CGFloat {
+        let tree = resolveTree(nodes)
+        var maxHeight = defaultBarHeight
+        for entry in tree {
+            if case .container(let node, _) = entry, let h = node.style.height {
+                maxHeight = max(maxHeight, CGFloat(h))
+            }
+        }
+        return maxHeight
+    }
 
-        var x = barPadding
-        for item in items {
-            x += drawItem(item, at: x)
-            x += itemSpacing
+    override func draw(_ dirtyRect: NSRect) {
+        let tree = resolveTree(nodes)
+        var x: CGFloat = 0
+
+        for (index, entry) in tree.enumerated() {
+            if index > 0 { x += containerSpacing }
+
+            switch entry {
+            case .container(let container, let children):
+                x += drawContainer(container, children: children, at: x)
+            case .item(let node):
+                x += drawItem(node, at: x, containerHeight: bounds.height)
+            }
         }
     }
 
-    private func drawItem(_ item: BarItem, at x: CGFloat) -> CGFloat {
-        var currentX = x
-        let centerY = bounds.height / 2
+    private func drawContainer(_ container: BarNode, children: [BarNode], at x: CGFloat) -> CGFloat {
+        let pl = CGFloat(container.style.paddingLeft ?? 0)
+        let pr = CGFloat(container.style.paddingRight ?? 0)
 
-        if let iconName = item.icon,
+        var innerWidth: CGFloat = 0
+        for (index, child) in children.enumerated() {
+            if index > 0 { innerWidth += itemSpacing }
+            innerWidth += measureItemWidth(child)
+        }
+
+        let totalWidth = pl + innerWidth + pr
+        let containerHeight = CGFloat(container.style.height ?? Float(defaultBarHeight))
+        let containerY = (bounds.height - containerHeight) / 2
+        let containerRect = NSRect(x: x, y: containerY, width: totalWidth, height: containerHeight)
+
+        let cr = CGFloat(container.style.cornerRadius ?? 0)
+        let path = NSBezierPath(roundedRect: containerRect, xRadius: cr, yRadius: cr)
+
+        let gfxContext = NSGraphicsContext.current
+        if let shadowHex = container.style.shadowColor, let shadowColor = NSColor.fromHex(shadowHex) {
+            gfxContext?.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = shadowColor
+            shadow.shadowBlurRadius = CGFloat(container.style.shadowRadius ?? 4)
+            shadow.shadowOffset = NSSize(width: 0, height: -1)
+            shadow.set()
+        }
+
+        if let bgHex = container.style.backgroundColor, let bgColor = NSColor.fromHex(bgHex) {
+            bgColor.setFill()
+            path.fill()
+        }
+
+        if container.style.shadowColor != nil {
+            gfxContext?.restoreGraphicsState()
+        }
+
+        let bw = CGFloat(container.style.borderWidth ?? 0)
+        if bw > 0, let borderHex = container.style.borderColor, let borderColor = NSColor.fromHex(borderHex) {
+            borderColor.setStroke()
+            path.lineWidth = bw
+            path.stroke()
+        }
+
+        var cx = x + pl
+        for (index, child) in children.enumerated() {
+            if index > 0 { cx += itemSpacing }
+            cx += drawItem(child, at: cx, containerHeight: containerHeight, containerY: containerY)
+        }
+
+        return totalWidth
+    }
+
+    private func drawItem(_ node: BarNode, at x: CGFloat, containerHeight: CGFloat, containerY: CGFloat = 0) -> CGFloat {
+        var currentX = x
+        let centerY = containerY + containerHeight / 2
+        let font = fontForNode(node)
+        let iconSize = iconSizeForNode(node)
+
+        if let iconName = node.icon,
            let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
         {
             let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
             let configured = image.withSymbolConfiguration(config) ?? image
 
-            let tintColor = item.iconColor.flatMap { NSColor.fromHex($0) } ?? .white
+            let tintColor = node.iconColor.flatMap { NSColor.fromHex($0) } ?? .white
             let tinted = configured.tinted(with: tintColor)
 
             let imageSize = tinted.size
@@ -57,14 +127,15 @@ class BarContentView: NSView {
             tinted.draw(in: imageRect)
             currentX += imageSize.width
 
-            if item.label != nil {
+            if node.label != nil {
                 currentX += iconLabelGap
             }
         }
 
-        if let label = item.label {
+        if let label = node.label {
+            let labelColor = node.labelColor.flatMap { NSColor.fromHex($0) } ?? .white
             let attrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: NSColor.white,
+                .foregroundColor: labelColor,
                 .font: font,
             ]
             let textSize = (label as NSString).size(withAttributes: attrs)
@@ -79,6 +150,52 @@ class BarContentView: NSView {
         }
 
         return currentX - x
+    }
+
+    private func measureItemWidth(_ node: BarNode) -> CGFloat {
+        var width: CGFloat = 0
+        let font = fontForNode(node)
+
+        if node.icon != nil {
+            width += iconSizeForNode(node) + 2
+        }
+
+        if let label = node.label {
+            let attrs: [NSAttributedString.Key: Any] = [.font: font]
+            let size = (label as NSString).size(withAttributes: attrs)
+            if width > 0 { width += iconLabelGap }
+            width += size.width
+        }
+
+        return max(width, 8)
+    }
+
+    private func fontForNode(_ node: BarNode) -> NSFont {
+        let size = CGFloat(node.fontSize ?? Float(defaultFontSize))
+        if let family = node.fontFamily, let font = NSFont(name: family, size: size) {
+            return font
+        }
+        let weight = fontWeight(from: node.fontWeight)
+        return NSFont.systemFont(ofSize: size, weight: weight)
+    }
+
+    private func iconSizeForNode(_ node: BarNode) -> CGFloat {
+        CGFloat(node.fontSize ?? Float(defaultIconSize))
+    }
+
+    private func fontWeight(from name: String?) -> NSFont.Weight {
+        switch name {
+        case "ultralight": return .ultraLight
+        case "thin": return .thin
+        case "light": return .light
+        case "regular": return .regular
+        case "medium": return .medium
+        case "semibold": return .semibold
+        case "bold": return .bold
+        case "heavy": return .heavy
+        case "black": return .black
+        default: return .medium
+        }
     }
 }
 

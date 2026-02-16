@@ -1,4 +1,4 @@
-use crate::state::BarItem;
+use crate::state::BarNode;
 
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct DisplayInfo {
@@ -9,11 +9,11 @@ pub struct DisplayInfo {
 
 #[derive(Debug, uniffi::Enum)]
 pub enum StateChangeEvent {
-    ItemAdded { display: u32, item: BarItem },
-    ItemRemoved { display: u32, name: String },
-    ItemUpdated { display: u32, item: BarItem },
-    ItemMoved { old_display: u32, new_display: u32, item: BarItem },
-    FullRefresh { display: u32, items: Vec<BarItem> },
+    NodeAdded { display: u32, node: BarNode },
+    NodeRemoved { display: u32, name: String },
+    NodeUpdated { display: u32, node: BarNode },
+    NodeMoved { old_display: u32, new_display: u32, node: BarNode },
+    FullRefresh { display: u32, nodes: Vec<BarNode> },
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]

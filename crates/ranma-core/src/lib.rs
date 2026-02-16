@@ -10,7 +10,7 @@ use std::sync::{Arc, OnceLock};
 use parking_lot::Mutex;
 
 use bridge::{DisplayInfo, StateChangeEvent, StateChangeHandler};
-use state::{BarItem, BarState};
+use state::{BarNode, BarState};
 
 static STATE: OnceLock<Arc<Mutex<BarState>>> = OnceLock::new();
 static HANDLER: OnceLock<Arc<dyn StateChangeHandler>> = OnceLock::new();
@@ -59,13 +59,13 @@ pub fn get_displays() -> Vec<DisplayInfo> {
 }
 
 #[uniffi::export]
-pub fn get_items() -> Vec<BarItem> {
-    get_state().lock().get_items()
+pub fn get_nodes() -> Vec<BarNode> {
+    get_state().lock().get_nodes()
 }
 
 #[uniffi::export]
-pub fn get_items_for_display(display: u32) -> Vec<BarItem> {
-    get_state().lock().get_items_for_display(display)
+pub fn get_nodes_for_display(display: u32) -> Vec<BarNode> {
+    get_state().lock().get_nodes_for_display(display)
 }
 
 pub(crate) fn main_display_id() -> u32 {

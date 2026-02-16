@@ -4,34 +4,34 @@ import AppKit
 // All mutable state is only accessed on the main thread via DispatchQueue.main.async.
 final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     private var windows: [UInt32: (BarWindow, BarContentView)] = [:]
-    private var items: [UInt32: [BarItem]] = [:]
+    private var nodes: [UInt32: [BarNode]] = [:]
 
     func onStateChange(event: StateChangeEvent) throws {
         DispatchQueue.main.async { [self] in
             switch event {
-            case let .itemAdded(display, item):
-                items[display, default: []].append(item)
+            case let .nodeAdded(display, node):
+                nodes[display, default: []].append(node)
                 refreshDisplay(display)
 
-            case let .itemRemoved(display, _):
-                let updated = getItemsForDisplay(display: display)
-                items[display] = updated
+            case let .nodeRemoved(display, _):
+                let updated = getNodesForDisplay(display: display)
+                nodes[display] = updated
                 refreshDisplay(display)
 
-            case let .itemUpdated(display, item):
-                if let idx = items[display]?.firstIndex(where: { $0.name == item.name }) {
-                    items[display]?[idx] = item
+            case let .nodeUpdated(display, node):
+                if let idx = nodes[display]?.firstIndex(where: { $0.name == node.name }) {
+                    nodes[display]?[idx] = node
                 }
                 refreshDisplay(display)
 
-            case let .itemMoved(oldDisplay, newDisplay, item):
-                items[oldDisplay]?.removeAll { $0.name == item.name }
+            case let .nodeMoved(oldDisplay, newDisplay, node):
+                nodes[oldDisplay]?.removeAll { $0.name == node.name }
                 refreshDisplay(oldDisplay)
-                items[newDisplay, default: []].append(item)
+                nodes[newDisplay, default: []].append(node)
                 refreshDisplay(newDisplay)
 
-            case let .fullRefresh(display, newItems):
-                items[display] = newItems
+            case let .fullRefresh(display, newNodes):
+                nodes[display] = newNodes
                 refreshDisplay(display)
             }
         }
@@ -39,9 +39,9 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
 
     @MainActor
     private func refreshDisplay(_ displayID: UInt32) {
-        let displayItems = items[displayID] ?? []
+        let displayNodes = nodes[displayID] ?? []
 
-        if displayItems.isEmpty {
+        if displayNodes.isEmpty {
             if let (window, _) = windows.removeValue(forKey: displayID) {
                 window.orderOut(nil)
             }
@@ -51,7 +51,7 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         guard let (window, contentView) = ensureWindow(for: displayID) else {
             return
         }
-        contentView.updateItems(displayItems)
+        contentView.updateNodes(displayNodes)
         let size = contentView.intrinsicContentSize
         window.updateFrame(contentSize: size, animate: true)
     }

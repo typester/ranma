@@ -4,26 +4,64 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-CONFIGURATION="${1:-debug}"
+TARGET=""
+CONFIGURATION="debug"
+
+usage() {
+    echo "Usage: $0 [--target <triple>] [debug|release]"
+    echo ""
+    echo "Options:"
+    echo "  --target <triple>  Cross-compile target (e.g., x86_64-apple-darwin)"
+    echo "  debug              Debug build (default)"
+    echo "  release            Release build"
+    exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --target)
+            TARGET="$2"
+            shift 2
+            ;;
+        debug|release)
+            CONFIGURATION="$1"
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
+CARGO_ARGS=()
+SWIFT_FLAGS=()
+
+if [[ -n "$TARGET" ]]; then
+    CARGO_ARGS+=(--target "$TARGET")
+    CARGO_OUT="target/${TARGET}/${CONFIGURATION}"
+else
+    CARGO_OUT="target/${CONFIGURATION}"
+fi
 
 case "$CONFIGURATION" in
     release)
-        CARGO_FLAGS="--release"
-        CARGO_OUT="target/release"
-        SWIFT_FLAGS="-c release"
+        CARGO_ARGS+=(--release)
+        SWIFT_FLAGS+=(-c release)
         ;;
     *)
-        CARGO_FLAGS=""
-        CARGO_OUT="target/debug"
-        SWIFT_FLAGS="-c debug"
+        SWIFT_FLAGS+=(-c debug)
         ;;
 esac
 
 echo "==> Building ranma-core (Rust, $CONFIGURATION)..."
-cargo build $CARGO_FLAGS -p ranma-core
+cargo build ${CARGO_ARGS[@]+"${CARGO_ARGS[@]}"} -p ranma-core
 
 echo "==> Building ranma CLI (Rust, $CONFIGURATION)..."
-cargo build $CARGO_FLAGS -p ranma-cli
+cargo build ${CARGO_ARGS[@]+"${CARGO_ARGS[@]}"} -p ranma-cli
 
 echo "==> Generating UniFFI Swift bindings..."
 cargo run -p uniffi-bindgen -- generate \
@@ -34,8 +72,6 @@ cargo run -p uniffi-bindgen -- generate \
 echo "==> Copying C headers for Swift systemLibrary target..."
 cp app/Sources/Generated/ranma_coreFFI.h app/Sources/CRanmaCore/include/
 
-# SPM requires module.modulemap at the system library root.
-# Module name must be "ranma_coreFFI" to match the generated Swift import.
 cat > app/Sources/CRanmaCore/module.modulemap <<'MODULEMAP'
 module ranma_coreFFI {
     header "include/ranma_coreFFI.h"
@@ -45,10 +81,25 @@ MODULEMAP
 
 echo "==> Building Swift app ($CONFIGURATION)..."
 cd app
-swift build $SWIFT_FLAGS \
-    -Xlinker -L"$ROOT_DIR/$CARGO_OUT" \
+
+SWIFT_LINK_FLAGS=(
+    -Xlinker -L"$ROOT_DIR/$CARGO_OUT"
     -Xlinker -lranma_core
+)
+
+if [[ -n "$TARGET" ]]; then
+    case "$TARGET" in
+        aarch64-apple-darwin)
+            SWIFT_FLAGS+=(--arch arm64)
+            ;;
+        x86_64-apple-darwin)
+            SWIFT_FLAGS+=(--arch x86_64)
+            ;;
+    esac
+fi
+
+swift build ${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"} "${SWIFT_LINK_FLAGS[@]}"
 
 echo "==> Done."
-echo "  Rust CLI: $ROOT_DIR/$CARGO_OUT/ranma"
-echo "  Swift app: app/.build/$CONFIGURATION/Ranma"
+echo "  ranma:        $ROOT_DIR/$CARGO_OUT/ranma"
+echo "  ranma-server: app/.build/$CONFIGURATION/ranma-server"

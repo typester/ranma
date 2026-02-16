@@ -10,7 +10,7 @@ let package = Package(
             path: "Sources/CRanmaCore"
         ),
         .executableTarget(
-            name: "Ranma",
+            name: "ranma-server",
             dependencies: ["CRanmaCore"],
             path: "Sources",
             exclude: ["CRanmaCore"],

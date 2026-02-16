@@ -13,7 +13,7 @@ class BarWindow: NSWindow {
         )
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = true
+        hasShadow = false
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.statusWindow)))
         collectionBehavior = [.canJoinAllSpaces, .stationary]
     }

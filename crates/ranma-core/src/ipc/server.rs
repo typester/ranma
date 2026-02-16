@@ -4,7 +4,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 
 use crate::bridge::StateChangeEvent;
-use crate::state::BarItem;
+use crate::state::{BarNode, NodeStyle, NodeType};
 use crate::{get_displays, get_state, main_display_id, notify};
 
 use super::protocol::{Command, DisplayDto, Response};
@@ -56,28 +56,62 @@ fn handle_command(input: &str) -> Response {
     match cmd {
         Command::Add {
             name,
+            node_type,
+            parent,
             label,
+            label_color,
             icon,
             icon_color,
             background_color,
+            border_color,
+            border_width,
+            corner_radius,
+            padding_left,
+            padding_right,
+            shadow_color,
+            shadow_radius,
+            height,
+            font_size,
+            font_weight,
+            font_family,
             position,
             display,
         } => {
             let display = display.unwrap_or_else(main_display_id);
-            let item = BarItem {
+            let nt = match node_type.as_deref() {
+                Some("container") => NodeType::Container,
+                _ => NodeType::Item,
+            };
+            let node = BarNode {
                 name,
+                node_type: nt,
+                parent,
                 label,
+                label_color,
                 icon,
                 icon_color,
-                background_color,
+                font_size,
+                font_weight,
+                font_family,
                 position: position.unwrap_or(0),
                 display,
+                style: NodeStyle {
+                    background_color,
+                    border_color,
+                    border_width,
+                    corner_radius,
+                    padding_left,
+                    padding_right,
+                    shadow_color,
+                    shadow_radius,
+                    height,
+                },
             };
             let mut state = get_state().lock();
-            match state.add_item(item.clone()) {
+            match state.add_node(node.clone()) {
                 Ok(()) => {
                     drop(state);
-                    notify(StateChangeEvent::ItemAdded { display, item });
+                    notify(StateChangeEvent::NodeAdded { display, node });
                     Response::Ok
                 }
                 Err(message) => Response::Error { message },
@@ -86,27 +120,27 @@ fn handle_command(input: &str) -> Response {
         Command::Set { name, properties } => {
             let mut state = get_state().lock();
             let old_display = state
-                .get_items()
+                .get_nodes()
                 .iter()
-                .find(|i| i.name == name)
-                .map(|i| i.display);
+                .find(|n| n.name == name)
+                .map(|n| n.display);
 
             match state.set_properties(&name, &properties) {
-                Ok(item) => {
-                    let new_display = item.display;
+                Ok(node) => {
+                    let new_display = node.display;
                     drop(state);
 
                     if let Some(old) = old_display {
                         if old != new_display {
-                            notify(StateChangeEvent::ItemMoved {
+                            notify(StateChangeEvent::NodeMoved {
                                 old_display: old,
                                 new_display,
-                                item,
+                                node,
                             });
                         } else {
-                            notify(StateChangeEvent::ItemUpdated {
+                            notify(StateChangeEvent::NodeUpdated {
                                 display: new_display,
-                                item,
+                                node,
                             });
                         }
                     }
@@ -117,14 +151,11 @@ fn handle_command(input: &str) -> Response {
         }
         Command::Remove { name } => {
             let mut state = get_state().lock();
-            match state.remove_item(&name) {
-                Ok(item) => {
-                    let display = item.display;
+            match state.remove_node(&name) {
+                Ok(node) => {
+                    let display = node.display;
                     drop(state);
-                    notify(StateChangeEvent::ItemRemoved {
-                        display,
-                        name,
-                    });
+                    notify(StateChangeEvent::NodeRemoved { display, name });
                     Response::Ok
                 }
                 Err(message) => Response::Error { message },
@@ -132,21 +163,21 @@ fn handle_command(input: &str) -> Response {
         }
         Command::Query { name, display } => {
             let state = get_state().lock();
-            let items: Vec<_> = match (name, display) {
+            let nodes: Vec<_> = match (name, display) {
                 (Some(name), _) => state
-                    .get_items()
+                    .get_nodes()
                     .into_iter()
-                    .filter(|i| i.name == name)
+                    .filter(|n| n.name == name)
                     .map(Into::into)
                     .collect(),
                 (None, Some(display)) => state
-                    .get_items_for_display(display)
+                    .get_nodes_for_display(display)
                     .into_iter()
                     .map(Into::into)
                     .collect(),
-                (None, None) => state.get_items().into_iter().map(Into::into).collect(),
+                (None, None) => state.get_nodes().into_iter().map(Into::into).collect(),
             };
-            Response::QueryResult { items }
+            Response::QueryResult { nodes }
         }
         Command::Displays => {
             let displays = get_displays()

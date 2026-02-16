@@ -9,6 +9,11 @@
 - This project uses **jj** (Jujutsu) instead of git for version control.
 - Write operations (commit, push, etc.) should be performed by the user unless explicitly instructed otherwise.
 
+## Workflow
+
+- **ALWAYS plan before coding.** Unless explicitly instructed otherwise, use plan mode to propose changes and get user approval before editing any files.
+- Do NOT start writing or editing code without a plan approved by the user.
+
 ## Code Style
 
 - Keep code comments minimal. Only add comments where the logic is genuinely unclear.
@@ -42,10 +47,25 @@
 - Builds Rust → generates UniFFI Swift bindings → copies headers → builds Swift app.
 - Generated files go to `app/Sources/Generated/` and `app/Sources/CRanmaCore/include/`.
 
+### Multi-Monitor
+- Each item has a `display: u32` field — the `CGDirectDisplayID` of the target screen.
+- `BarState` stores items per-display: `HashMap<u32, Vec<BarItem>>`.
+- Windows are created lazily: no bar is visible until the first item is added for a display.
+- Windows are destroyed when all items for a display are removed.
+- `RanmaAppDelegate` observes `didChangeScreenParametersNotification` and calls `setDisplays()` to sync the display list to Rust.
+- `StateChangeEvent::ItemMoved` handles cross-display item moves.
+
 ### IPC Protocol
 - Unix Domain Socket at `$TMPDIR/ranma_<uid>.sock`.
-- Newline-delimited JSON. Commands: `add`, `set`, `remove`, `query`.
-- CLI usage: `ranma --add <name> [key=value ...]`, `ranma --set <name> key=value ...`, `ranma --remove <name>`, `ranma --query [name]`.
+- Newline-delimited JSON. Commands: `add`, `set`, `remove`, `query`, `displays`.
+
+### CLI
+- Uses **argh** for argument parsing (user preference). Subcommand-based, no `key=value` syntax.
+- `ranma add <name> --label "text" --icon "sf.symbol" --display N`
+- `ranma set <name> --label "new" --display N`
+- `ranma remove <name>`
+- `ranma query [name] --display N`
+- `ranma displays`
 
 ### UniFFI Details
 - Version: 0.29.x (proc-macro based, `uniffi::setup_scaffolding!()` in lib.rs).

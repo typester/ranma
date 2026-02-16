@@ -2,28 +2,127 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
 
+use argh::FromArgs;
 use serde_json::{json, Value};
 
-fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    if args.is_empty() {
-        eprintln!("usage: ranma --add <name> [key=value ...] | --set <name> key=value ... | --remove <name> | --query [name]");
-        std::process::exit(1);
-    }
+/// ranma status bar controller
+#[derive(FromArgs)]
+struct Args {
+    #[argh(subcommand)]
+    command: Command,
+}
 
-    let command = match parse_args(&args) {
-        Ok(cmd) => cmd,
-        Err(e) => {
-            eprintln!("error: {e}");
-            std::process::exit(1);
-        }
-    };
+#[derive(FromArgs)]
+#[argh(subcommand)]
+enum Command {
+    Add(AddCmd),
+    Set(SetCmd),
+    Remove(RemoveCmd),
+    Query(QueryCmd),
+    Displays(DisplaysCmd),
+}
+
+/// add an item to the bar
+#[derive(FromArgs)]
+#[argh(subcommand, name = "add")]
+struct AddCmd {
+    /// item name
+    #[argh(positional)]
+    name: String,
+
+    /// text label
+    #[argh(option)]
+    label: Option<String>,
+
+    /// SF Symbol icon name
+    #[argh(option)]
+    icon: Option<String>,
+
+    /// icon color (hex, e.g. #FF0000)
+    #[argh(option)]
+    icon_color: Option<String>,
+
+    /// background color (hex)
+    #[argh(option)]
+    background_color: Option<String>,
+
+    /// sort position
+    #[argh(option)]
+    position: Option<i32>,
+
+    /// target display ID
+    #[argh(option)]
+    display: Option<u32>,
+}
+
+/// update item properties
+#[derive(FromArgs)]
+#[argh(subcommand, name = "set")]
+struct SetCmd {
+    /// item name
+    #[argh(positional)]
+    name: String,
+
+    /// text label
+    #[argh(option)]
+    label: Option<String>,
+
+    /// SF Symbol icon name
+    #[argh(option)]
+    icon: Option<String>,
+
+    /// icon color (hex)
+    #[argh(option)]
+    icon_color: Option<String>,
+
+    /// background color (hex)
+    #[argh(option)]
+    background_color: Option<String>,
+
+    /// sort position
+    #[argh(option)]
+    position: Option<i32>,
+
+    /// move to display ID
+    #[argh(option)]
+    display: Option<u32>,
+}
+
+/// remove an item
+#[derive(FromArgs)]
+#[argh(subcommand, name = "remove")]
+struct RemoveCmd {
+    /// item name
+    #[argh(positional)]
+    name: String,
+}
+
+/// query items
+#[derive(FromArgs)]
+#[argh(subcommand, name = "query")]
+struct QueryCmd {
+    /// item name (optional, query all if omitted)
+    #[argh(positional)]
+    name: Option<String>,
+
+    /// filter by display ID
+    #[argh(option)]
+    display: Option<u32>,
+}
+
+/// list connected displays
+#[derive(FromArgs)]
+#[argh(subcommand, name = "displays")]
+struct DisplaysCmd {}
+
+fn main() {
+    let args: Args = argh::from_env();
+
+    let command = build_command(args.command);
 
     let socket_path = default_socket_path();
     match send_command(&socket_path, &command) {
-        Ok(response) => {
-            println!("{response}");
-        }
+        Ok(response) => println!("{response}"),
         Err(e) => {
             eprintln!("error: {e}");
             std::process::exit(1);
@@ -31,52 +130,39 @@ fn main() {
     }
 }
 
-fn parse_args(args: &[String]) -> Result<Value, String> {
-    let cmd = args[0].as_str();
-    let rest = &args[1..];
-
+fn build_command(cmd: Command) -> Value {
     match cmd {
-        "--add" => {
-            let name = rest.first().ok_or("--add requires a name")?;
-            let props = parse_key_values(&rest[1..]);
-            let mut obj = json!({ "command": "add", "name": name });
-            for (k, v) in &props {
-                obj[k] = json!(v);
-            }
-            Ok(obj)
+        Command::Add(c) => {
+            let mut obj = json!({
+                "command": "add",
+                "name": c.name,
+            });
+            if let Some(v) = c.label { obj["label"] = json!(v); }
+            if let Some(v) = c.icon { obj["icon"] = json!(v); }
+            if let Some(v) = c.icon_color { obj["icon_color"] = json!(v); }
+            if let Some(v) = c.background_color { obj["background_color"] = json!(v); }
+            if let Some(v) = c.position { obj["position"] = json!(v); }
+            if let Some(v) = c.display { obj["display"] = json!(v); }
+            obj
         }
-        "--set" => {
-            let name = rest.first().ok_or("--set requires a name")?;
-            let props = parse_key_values(&rest[1..]);
-            if props.is_empty() {
-                return Err("--set requires at least one key=value".into());
-            }
-            Ok(json!({
+        Command::Set(c) => {
+            let mut properties: HashMap<String, String> = HashMap::new();
+            if let Some(v) = c.label { properties.insert("label".into(), v); }
+            if let Some(v) = c.icon { properties.insert("icon".into(), v); }
+            if let Some(v) = c.icon_color { properties.insert("icon_color".into(), v); }
+            if let Some(v) = c.background_color { properties.insert("background_color".into(), v); }
+            if let Some(v) = c.position { properties.insert("position".into(), v.to_string()); }
+            if let Some(v) = c.display { properties.insert("display".into(), v.to_string()); }
+            json!({
                 "command": "set",
-                "name": name,
-                "properties": props,
-            }))
+                "name": c.name,
+                "properties": properties,
+            })
         }
-        "--remove" => {
-            let name = rest.first().ok_or("--remove requires a name")?;
-            Ok(json!({ "command": "remove", "name": name }))
-        }
-        "--query" => {
-            let name = rest.first().map(|s| s.as_str());
-            Ok(json!({ "command": "query", "name": name }))
-        }
-        _ => Err(format!("unknown command: {cmd}")),
+        Command::Remove(c) => json!({ "command": "remove", "name": c.name }),
+        Command::Query(c) => json!({ "command": "query", "name": c.name, "display": c.display }),
+        Command::Displays(_) => json!({ "command": "displays" }),
     }
-}
-
-fn parse_key_values(args: &[String]) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    for arg in args {
-        if let Some((k, v)) = arg.split_once('=') {
-            map.insert(k.to_string(), v.to_string());
-        }
-    }
-    map
 }
 
 fn default_socket_path() -> String {

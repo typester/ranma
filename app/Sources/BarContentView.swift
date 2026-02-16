@@ -12,9 +12,6 @@ class BarContentView: NSView {
     private var items: [BarItem] = []
 
     override var intrinsicContentSize: NSSize {
-        if items.isEmpty {
-            return NSSize(width: 120, height: barHeight)
-        }
         let totalWidth = WindowSizer.calculateWidth(for: items, padding: barPadding)
         return NSSize(width: totalWidth, height: barHeight)
     }
@@ -30,32 +27,11 @@ class BarContentView: NSView {
         NSColor(white: 0.15, alpha: 0.9).setFill()
         path.fill()
 
-        if items.isEmpty {
-            drawPlaceholder()
-            return
-        }
-
         var x = barPadding
         for item in items {
             x += drawItem(item, at: x)
             x += itemSpacing
         }
-    }
-
-    private func drawPlaceholder() {
-        let text = "ranma" as NSString
-        let attrs: [NSAttributedString.Key: Any] = [
-            .foregroundColor: NSColor.white.withAlphaComponent(0.5),
-            .font: font,
-        ]
-        let textSize = text.size(withAttributes: attrs)
-        let textRect = NSRect(
-            x: (bounds.width - textSize.width) / 2,
-            y: (bounds.height - textSize.height) / 2,
-            width: textSize.width,
-            height: textSize.height
-        )
-        text.draw(in: textRect, withAttributes: attrs)
     }
 
     private func drawItem(_ item: BarItem, at x: CGFloat) -> CGFloat {

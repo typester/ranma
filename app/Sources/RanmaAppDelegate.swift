@@ -1,25 +1,40 @@
 import AppKit
 
 class RanmaAppDelegate: NSObject, NSApplicationDelegate {
-    private var barWindow: BarWindow!
-    private var contentView: BarContentView!
     private var viewModel: BarViewModel!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        contentView = BarContentView()
-        barWindow = BarWindow()
-        barWindow.contentView = contentView
-
-        viewModel = BarViewModel(window: barWindow, contentView: contentView)
+        viewModel = BarViewModel()
         registerHandler(handler: viewModel)
 
-        barWindow.updateFrame(contentSize: contentView.intrinsicContentSize, animate: false)
-        barWindow.orderFrontRegardless()
+        updateDisplayList()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screenParametersChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
 
         let socketPath = defaultSocketPath()
         DispatchQueue.global(qos: .utility).async {
             startServer(socketPath: socketPath)
         }
+    }
+
+    @objc private func screenParametersChanged(_ notification: Notification) {
+        updateDisplayList()
+    }
+
+    private func updateDisplayList() {
+        let displays = NSScreen.screens.map { screen in
+            DisplayInfo(
+                id: screen.displayID,
+                name: screen.localizedName,
+                isMain: screen == NSScreen.main
+            )
+        }
+        setDisplays(displays: displays)
     }
 
     private func defaultSocketPath() -> String {

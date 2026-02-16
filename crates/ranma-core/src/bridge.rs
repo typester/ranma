@@ -1,11 +1,19 @@
 use crate::state::BarItem;
 
+#[derive(Debug, Clone, uniffi::Record)]
+pub struct DisplayInfo {
+    pub id: u32,
+    pub name: String,
+    pub is_main: bool,
+}
+
 #[derive(Debug, uniffi::Enum)]
 pub enum StateChangeEvent {
-    ItemAdded { item: BarItem },
-    ItemRemoved { name: String },
-    ItemUpdated { item: BarItem },
-    FullRefresh { items: Vec<BarItem> },
+    ItemAdded { display: u32, item: BarItem },
+    ItemRemoved { display: u32, name: String },
+    ItemUpdated { display: u32, item: BarItem },
+    ItemMoved { old_display: u32, new_display: u32, item: BarItem },
+    FullRefresh { display: u32, items: Vec<BarItem> },
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]

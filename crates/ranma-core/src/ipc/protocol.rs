@@ -18,6 +18,8 @@ pub enum Command {
         background_color: Option<String>,
         #[serde(default)]
         position: Option<i32>,
+        #[serde(default)]
+        display: Option<u32>,
     },
     Set {
         name: String,
@@ -29,7 +31,10 @@ pub enum Command {
     Query {
         #[serde(default)]
         name: Option<String>,
+        #[serde(default)]
+        display: Option<u32>,
     },
+    Displays,
 }
 
 #[derive(Debug, Serialize)]
@@ -38,6 +43,7 @@ pub enum Response {
     Ok,
     Error { message: String },
     QueryResult { items: Vec<ItemDto> },
+    DisplayList { displays: Vec<DisplayDto> },
 }
 
 #[derive(Debug, Serialize)]
@@ -48,6 +54,7 @@ pub struct ItemDto {
     pub icon_color: Option<String>,
     pub background_color: Option<String>,
     pub position: i32,
+    pub display: u32,
 }
 
 impl From<BarItem> for ItemDto {
@@ -59,6 +66,14 @@ impl From<BarItem> for ItemDto {
             icon_color: item.icon_color,
             background_color: item.background_color,
             position: item.position,
+            display: item.display,
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct DisplayDto {
+    pub id: u32,
+    pub name: String,
+    pub is_main: bool,
 }

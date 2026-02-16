@@ -9,14 +9,19 @@ use std::sync::{Arc, OnceLock};
 
 use parking_lot::Mutex;
 
-use bridge::{StateChangeEvent, StateChangeHandler};
+use bridge::{DisplayInfo, StateChangeEvent, StateChangeHandler};
 use state::{BarItem, BarState};
 
 static STATE: OnceLock<Arc<Mutex<BarState>>> = OnceLock::new();
 static HANDLER: OnceLock<Arc<dyn StateChangeHandler>> = OnceLock::new();
+static DISPLAYS: OnceLock<Arc<Mutex<Vec<DisplayInfo>>>> = OnceLock::new();
 
 pub(crate) fn get_state() -> &'static Arc<Mutex<BarState>> {
     STATE.get_or_init(|| Arc::new(Mutex::new(BarState::default())))
+}
+
+fn get_displays_store() -> &'static Arc<Mutex<Vec<DisplayInfo>>> {
+    DISPLAYS.get_or_init(|| Arc::new(Mutex::new(Vec::new())))
 }
 
 pub fn notify(event: StateChangeEvent) {
@@ -44,6 +49,30 @@ pub fn start_server(socket_path: String) {
 }
 
 #[uniffi::export]
+pub fn set_displays(displays: Vec<DisplayInfo>) {
+    *get_displays_store().lock() = displays;
+}
+
+#[uniffi::export]
+pub fn get_displays() -> Vec<DisplayInfo> {
+    get_displays_store().lock().clone()
+}
+
+#[uniffi::export]
 pub fn get_items() -> Vec<BarItem> {
     get_state().lock().get_items()
+}
+
+#[uniffi::export]
+pub fn get_items_for_display(display: u32) -> Vec<BarItem> {
+    get_state().lock().get_items_for_display(display)
+}
+
+pub(crate) fn main_display_id() -> u32 {
+    get_displays_store()
+        .lock()
+        .iter()
+        .find(|d| d.is_main)
+        .map(|d| d.id)
+        .unwrap_or(0)
 }

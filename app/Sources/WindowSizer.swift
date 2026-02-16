@@ -27,9 +27,10 @@ enum WindowSizer {
         case .container(let node, let children):
             let pl = CGFloat(node.style.paddingLeft ?? 0)
             let pr = CGFloat(node.style.paddingRight ?? 0)
+            let gap = CGFloat(node.style.gap ?? 8)
             var inner: CGFloat = 0
             for (index, child) in children.enumerated() {
-                if index > 0 { inner += itemSpacing }
+                if index > 0 { inner += gap }
                 inner += measureItem(child)
             }
             return pl + inner + pr
@@ -39,6 +40,8 @@ enum WindowSizer {
     }
 
     private static func measureItem(_ node: BarNode) -> CGFloat {
+        if let w = node.style.width { return CGFloat(w) }
+
         var width: CGFloat = 0
         let font = fontForNode(node)
 
@@ -56,7 +59,9 @@ enum WindowSizer {
             width += size.width
         }
 
-        return max(width, 8)
+        let pl = CGFloat(node.style.paddingLeft ?? 0)
+        let pr = CGFloat(node.style.paddingRight ?? 0)
+        return pl + width + pr
     }
 
     private static func fontForNode(_ node: BarNode) -> NSFont {

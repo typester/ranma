@@ -16,7 +16,9 @@ pub struct NodeStyle {
     pub padding_right: Option<f32>,
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
+    pub width: Option<f32>,
     pub height: Option<f32>,
+    pub gap: Option<f32>,
     pub notch_align: Option<String>,
 }
 
@@ -31,7 +33,9 @@ impl Default for NodeStyle {
             padding_right: None,
             shadow_color: None,
             shadow_radius: None,
+            width: None,
             height: None,
+            gap: None,
             notch_align: None,
         }
     }
@@ -189,12 +193,34 @@ impl BarState {
                             .map_err(|_| format!("invalid shadow_radius: {}", value))?,
                     );
                 }
+                "width" => {
+                    node.style.width = if value.is_empty() {
+                        None
+                    } else {
+                        Some(
+                            value
+                                .parse()
+                                .map_err(|_| format!("invalid width: {}", value))?,
+                        )
+                    };
+                }
                 "height" => {
                     node.style.height = Some(
                         value
                             .parse()
                             .map_err(|_| format!("invalid height: {}", value))?,
                     );
+                }
+                "gap" => {
+                    node.style.gap = if value.is_empty() {
+                        None
+                    } else {
+                        Some(
+                            value
+                                .parse()
+                                .map_err(|_| format!("invalid gap: {}", value))?,
+                        )
+                    };
                 }
                 "font_size" => {
                     node.font_size = Some(

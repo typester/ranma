@@ -5,34 +5,51 @@ import AppKit
 final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     private var windows: [UInt32: [BarWindow.Alignment: (BarWindow, BarContentView)]] = [:]
     private var nodes: [UInt32: [BarNode]] = [:]
+    private var pendingDisplays: Set<UInt32> = []
+    private var refreshTimer: Timer?
 
     func onStateChange(event: StateChangeEvent) throws {
         DispatchQueue.main.async { [self] in
             switch event {
             case let .nodeAdded(display, node):
                 nodes[display, default: []].append(node)
-                refreshDisplay(display)
+                scheduleRefresh(display)
 
             case let .nodeRemoved(display, _):
                 let updated = getNodesForDisplay(display: display)
                 nodes[display] = updated
-                refreshDisplay(display)
+                scheduleRefresh(display)
 
             case let .nodeUpdated(display, node):
                 if let idx = nodes[display]?.firstIndex(where: { $0.name == node.name }) {
                     nodes[display]?[idx] = node
                 }
-                refreshDisplay(display)
+                scheduleRefresh(display)
 
             case let .nodeMoved(oldDisplay, newDisplay, node):
                 nodes[oldDisplay]?.removeAll { $0.name == node.name }
-                refreshDisplay(oldDisplay)
+                scheduleRefresh(oldDisplay)
                 nodes[newDisplay, default: []].append(node)
-                refreshDisplay(newDisplay)
+                scheduleRefresh(newDisplay)
 
             case let .fullRefresh(display, newNodes):
                 nodes[display] = newNodes
-                refreshDisplay(display)
+                scheduleRefresh(display)
+            }
+        }
+    }
+
+    @MainActor
+    private func scheduleRefresh(_ displayID: UInt32) {
+        pendingDisplays.insert(displayID)
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: false) { _ in
+            DispatchQueue.main.async { [self] in
+                let displays = pendingDisplays
+                pendingDisplays.removeAll()
+                for id in displays {
+                    refreshDisplay(id)
+                }
             }
         }
     }

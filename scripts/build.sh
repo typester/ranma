@@ -100,6 +100,8 @@ fi
 
 swift build ${SWIFT_FLAGS[@]+"${SWIFT_FLAGS[@]}"} "${SWIFT_LINK_FLAGS[@]}"
 
+cp "$ROOT_DIR/app/.build/$CONFIGURATION/ranma-server" "$ROOT_DIR/$CARGO_OUT/"
+
 echo "==> Done."
 echo "  ranma:        $ROOT_DIR/$CARGO_OUT/ranma"
-echo "  ranma-server: app/.build/$CONFIGURATION/ranma-server"
+echo "  ranma-server: $ROOT_DIR/$CARGO_OUT/ranma-server"

@@ -20,6 +20,10 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.global(qos: .utility).async {
             startServer(socketPath: socketPath)
         }
+
+        DispatchQueue.global(qos: .utility).async {
+            runInitScript(socketPath: socketPath)
+        }
     }
 
     @MainActor @objc private func screenParametersChanged(_ notification: Notification) {
@@ -44,4 +48,31 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
         let tmpDir = NSTemporaryDirectory()
         return "\(tmpDir)ranma_\(uid).sock"
     }
+}
+
+private func runInitScript(socketPath: String) {
+    for _ in 0..<40 {
+        if FileManager.default.fileExists(atPath: socketPath) { break }
+        Thread.sleep(forTimeInterval: 0.05)
+    }
+
+    let initPath: String
+    if let envPath = ProcessInfo.processInfo.environment["RANMA_INIT"] {
+        initPath = (envPath as NSString).expandingTildeInPath
+    } else {
+        initPath = NSString("~/.config/ranma/init").expandingTildeInPath
+    }
+    guard FileManager.default.isExecutableFile(atPath: initPath) else { return }
+
+    eprintln("running init: \(initPath)")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: initPath)
+    process.standardOutput = FileHandle.standardError
+    process.standardError = FileHandle.standardError
+    try? process.run()
+    process.waitUntilExit()
+}
+
+private func eprintln(_ message: String) {
+    FileHandle.standardError.write(Data((message + "\n").utf8))
 }

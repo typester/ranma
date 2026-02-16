@@ -52,10 +52,11 @@ class BarContentView: NSView {
     private func drawContainer(_ container: BarNode, children: [BarNode], at x: CGFloat) -> CGFloat {
         let pl = CGFloat(container.style.paddingLeft ?? 0)
         let pr = CGFloat(container.style.paddingRight ?? 0)
+        let gap = CGFloat(container.style.gap ?? 8)
 
         var innerWidth: CGFloat = 0
         for (index, child) in children.enumerated() {
-            if index > 0 { innerWidth += itemSpacing }
+            if index > 0 { innerWidth += gap }
             innerWidth += measureItemWidth(child)
         }
 
@@ -95,7 +96,7 @@ class BarContentView: NSView {
 
         var cx = x + pl
         for (index, child) in children.enumerated() {
-            if index > 0 { cx += itemSpacing }
+            if index > 0 { cx += gap }
             cx += drawItem(child, at: cx, containerHeight: containerHeight, containerY: containerY)
         }
 
@@ -103,10 +104,57 @@ class BarContentView: NSView {
     }
 
     private func drawItem(_ node: BarNode, at x: CGFloat, containerHeight: CGFloat, containerY: CGFloat = 0) -> CGFloat {
-        var currentX = x
         let centerY = containerY + containerHeight / 2
         let font = fontForNode(node)
         let iconSize = iconSizeForNode(node)
+
+        let hasBackground = node.style.backgroundColor != nil
+            || node.style.borderColor != nil
+            || node.style.shadowColor != nil
+        let pl = CGFloat(node.style.paddingLeft ?? 0)
+        let pr = CGFloat(node.style.paddingRight ?? 0)
+
+        let contentWidth = measureContentWidth(node)
+        let totalWidth = node.style.width.map { CGFloat($0) } ?? (pl + contentWidth + pr)
+
+        // Draw background/border/shadow if styled
+        if hasBackground {
+            let bgHeight = node.style.height.map { CGFloat($0) } ?? containerHeight
+            let bgY = containerY + (containerHeight - bgHeight) / 2
+            let bgRect = NSRect(x: x, y: bgY, width: totalWidth, height: bgHeight)
+            let cr = CGFloat(node.style.cornerRadius ?? 0)
+            let path = NSBezierPath(roundedRect: bgRect, xRadius: cr, yRadius: cr)
+
+            let gfxContext = NSGraphicsContext.current
+            if let shadowHex = node.style.shadowColor, let shadowColor = NSColor.fromHex(shadowHex) {
+                gfxContext?.saveGraphicsState()
+                let shadow = NSShadow()
+                shadow.shadowColor = shadowColor
+                shadow.shadowBlurRadius = CGFloat(node.style.shadowRadius ?? 4)
+                shadow.shadowOffset = NSSize(width: 0, height: -1)
+                shadow.set()
+            }
+
+            if let bgHex = node.style.backgroundColor, let bgColor = NSColor.fromHex(bgHex) {
+                bgColor.setFill()
+                path.fill()
+            }
+
+            if node.style.shadowColor != nil {
+                gfxContext?.restoreGraphicsState()
+            }
+
+            let bw = CGFloat(node.style.borderWidth ?? 0)
+            if bw > 0, let borderHex = node.style.borderColor, let borderColor = NSColor.fromHex(borderHex) {
+                borderColor.setStroke()
+                path.lineWidth = bw
+                path.stroke()
+            }
+        }
+
+        // Draw content — center within totalWidth
+        let contentOffset = (totalWidth - pl - pr - contentWidth) / 2
+        var currentX = x + pl + contentOffset
 
         if let iconName = node.icon,
            let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
@@ -146,13 +194,12 @@ class BarContentView: NSView {
                 height: textSize.height
             )
             (label as NSString).draw(in: textRect, withAttributes: attrs)
-            currentX += textSize.width
         }
 
-        return currentX - x
+        return totalWidth
     }
 
-    private func measureItemWidth(_ node: BarNode) -> CGFloat {
+    private func measureContentWidth(_ node: BarNode) -> CGFloat {
         var width: CGFloat = 0
         let font = fontForNode(node)
 
@@ -170,7 +217,15 @@ class BarContentView: NSView {
             width += size.width
         }
 
-        return max(width, 8)
+        return width
+    }
+
+    private func measureItemWidth(_ node: BarNode) -> CGFloat {
+        if let w = node.style.width { return CGFloat(w) }
+        let contentWidth = measureContentWidth(node)
+        let pl = CGFloat(node.style.paddingLeft ?? 0)
+        let pr = CGFloat(node.style.paddingRight ?? 0)
+        return pl + contentWidth + pr
     }
 
     private func fontForNode(_ node: BarNode) -> NSFont {
@@ -207,14 +262,23 @@ extension NSColor {
         var hexStr = hex.trimmingCharacters(in: .whitespacesAndNewlines)
         if hexStr.hasPrefix("#") { hexStr.removeFirst() }
 
-        guard hexStr.count == 6, let value = UInt64(hexStr, radix: 16) else {
+        guard let value = UInt64(hexStr, radix: 16) else { return nil }
+
+        switch hexStr.count {
+        case 6:
+            let r = CGFloat((value >> 16) & 0xFF) / 255.0
+            let g = CGFloat((value >> 8) & 0xFF) / 255.0
+            let b = CGFloat(value & 0xFF) / 255.0
+            return NSColor(red: r, green: g, blue: b, alpha: 1.0)
+        case 8:
+            let r = CGFloat((value >> 24) & 0xFF) / 255.0
+            let g = CGFloat((value >> 16) & 0xFF) / 255.0
+            let b = CGFloat((value >> 8) & 0xFF) / 255.0
+            let a = CGFloat(value & 0xFF) / 255.0
+            return NSColor(red: r, green: g, blue: b, alpha: a)
+        default:
             return nil
         }
-
-        let r = CGFloat((value >> 16) & 0xFF) / 255.0
-        let g = CGFloat((value >> 8) & 0xFF) / 255.0
-        let b = CGFloat(value & 0xFF) / 255.0
-        return NSColor(red: r, green: g, blue: b, alpha: 1.0)
     }
 }
 

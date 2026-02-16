@@ -1,0 +1,20 @@
+#!/bin/zsh
+
+# Yashiki workspace indicator for ranma
+#
+# Displays workspace numbers on the menu bar, updated in real-time
+# via yashiki events. Supports multiple displays.
+#
+# Prerequisites:
+#   - yashiki running
+#   - python3 (macOS built-in)
+#   - Hack Nerd Font (brew install --cask font-hack-nerd-font)
+#
+# Usage:
+#   ranma start --init ./examples/yashiki-workspace/init
+
+SCRIPT_DIR="${0:A:h}"
+
+# All container/item creation is handled by the bridge based on
+# actual display IDs reported by yashiki.
+"$SCRIPT_DIR/plugins/yashiki_bridge.py" &

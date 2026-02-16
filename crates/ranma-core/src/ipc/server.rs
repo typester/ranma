@@ -70,7 +70,9 @@ fn handle_command(input: &str) -> Response {
             padding_right,
             shadow_color,
             shadow_radius,
+            width,
             height,
+            gap,
             font_size,
             font_weight,
             font_family,
@@ -78,7 +80,19 @@ fn handle_command(input: &str) -> Response {
             position,
             display,
         } => {
-            let display = display.unwrap_or_else(main_display_id);
+            let display = display.unwrap_or_else(|| {
+                if let Some(ref parent_name) = parent {
+                    let state = get_state().lock();
+                    state
+                        .get_nodes()
+                        .iter()
+                        .find(|n| &n.name == parent_name)
+                        .map(|n| n.display)
+                        .unwrap_or_else(main_display_id)
+                } else {
+                    main_display_id()
+                }
+            });
             let nt = match node_type.as_deref() {
                 Some("container") => NodeType::Container,
                 _ => NodeType::Item,
@@ -105,7 +119,9 @@ fn handle_command(input: &str) -> Response {
                     padding_right,
                     shadow_color,
                     shadow_radius,
+                    width,
                     height,
+                    gap,
                     notch_align,
                 },
             };

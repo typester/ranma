@@ -37,7 +37,11 @@ pub enum Command {
         #[serde(default)]
         shadow_radius: Option<f32>,
         #[serde(default)]
+        width: Option<f32>,
+        #[serde(default)]
         height: Option<f32>,
+        #[serde(default)]
+        gap: Option<f32>,
         #[serde(default)]
         font_size: Option<f32>,
         #[serde(default)]
@@ -95,7 +99,9 @@ pub struct NodeDto {
     pub padding_right: Option<f32>,
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
+    pub width: Option<f32>,
     pub height: Option<f32>,
+    pub gap: Option<f32>,
     pub notch_align: Option<String>,
     pub font_size: Option<f32>,
     pub font_weight: Option<String>,
@@ -125,7 +131,9 @@ impl From<BarNode> for NodeDto {
             padding_right: node.style.padding_right,
             shadow_color: node.style.shadow_color,
             shadow_radius: node.style.shadow_radius,
+            width: node.style.width,
             height: node.style.height,
+            gap: node.style.gap,
             notch_align: node.style.notch_align,
             font_size: node.font_size,
             font_weight: node.font_weight,

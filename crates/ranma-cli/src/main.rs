@@ -31,6 +31,10 @@ struct StartCmd {
     /// path to ranma-server binary
     #[argh(option)]
     server_path: Option<String>,
+
+    /// path to init script (overrides ~/.config/ranma/init)
+    #[argh(option, long = "init")]
+    init_script: Option<String>,
 }
 
 /// add a node to the bar
@@ -97,9 +101,17 @@ struct AddCmd {
     #[argh(option)]
     shadow_radius: Option<f32>,
 
+    /// fixed width
+    #[argh(option)]
+    width: Option<f32>,
+
     /// container height
     #[argh(option)]
     height: Option<f32>,
+
+    /// item spacing within container
+    #[argh(option)]
+    gap: Option<f32>,
 
     /// font size (default 12)
     #[argh(option)]
@@ -186,9 +198,17 @@ struct SetCmd {
     #[argh(option)]
     shadow_radius: Option<f32>,
 
+    /// fixed width
+    #[argh(option)]
+    width: Option<f32>,
+
     /// container height
     #[argh(option)]
     height: Option<f32>,
+
+    /// item spacing within container
+    #[argh(option)]
+    gap: Option<f32>,
 
     /// font size (default 12)
     #[argh(option)]
@@ -269,7 +289,11 @@ fn exec_server(cmd: StartCmd) {
         dir.join("ranma-server").to_string_lossy().into_owned()
     });
 
-    let err = std::process::Command::new(&server_path).exec();
+    let mut command = std::process::Command::new(&server_path);
+    if let Some(init) = cmd.init_script {
+        command.env("RANMA_INIT", init);
+    }
+    let err = command.exec();
     eprintln!("error: failed to exec {}: {}", server_path, err);
     std::process::exit(1);
 }
@@ -296,7 +320,9 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.padding_right { obj["padding_right"] = json!(v); }
             if let Some(v) = c.shadow_color { obj["shadow_color"] = json!(v); }
             if let Some(v) = c.shadow_radius { obj["shadow_radius"] = json!(v); }
+            if let Some(v) = c.width { obj["width"] = json!(v); }
             if let Some(v) = c.height { obj["height"] = json!(v); }
+            if let Some(v) = c.gap { obj["gap"] = json!(v); }
             if let Some(v) = c.font_size { obj["font_size"] = json!(v); }
             if let Some(v) = c.font_weight { obj["font_weight"] = json!(v); }
             if let Some(v) = c.font_family { obj["font_family"] = json!(v); }
@@ -320,7 +346,9 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.padding_right { properties.insert("padding_right".into(), v.to_string()); }
             if let Some(v) = c.shadow_color { properties.insert("shadow_color".into(), v); }
             if let Some(v) = c.shadow_radius { properties.insert("shadow_radius".into(), v.to_string()); }
+            if let Some(v) = c.width { properties.insert("width".into(), v.to_string()); }
             if let Some(v) = c.height { properties.insert("height".into(), v.to_string()); }
+            if let Some(v) = c.gap { properties.insert("gap".into(), v.to_string()); }
             if let Some(v) = c.font_size { properties.insert("font_size".into(), v.to_string()); }
             if let Some(v) = c.font_weight { properties.insert("font_weight".into(), v); }
             if let Some(v) = c.font_family { properties.insert("font_family".into(), v); }

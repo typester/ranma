@@ -1,0 +1,14 @@
+# Rust
+/target/
+
+# Swift
+/app/.build/
+/app/.swiftpm/
+
+# UniFFI generated files
+/app/Sources/Generated/
+/app/Sources/CRanmaCore/include/
+/app/Sources/CRanmaCore/module.modulemap
+
+# macOS
+.DS_Store

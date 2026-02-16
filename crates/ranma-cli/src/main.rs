@@ -45,7 +45,7 @@ struct AddCmd {
     #[argh(positional)]
     name: String,
 
-    /// node type: item (default) or container
+    /// node type: item (default), row, column, or box
     #[argh(option, long = "type")]
     node_type: Option<String>,
 
@@ -93,6 +93,26 @@ struct AddCmd {
     #[argh(option)]
     padding_right: Option<f32>,
 
+    /// padding top
+    #[argh(option)]
+    padding_top: Option<f32>,
+
+    /// padding bottom
+    #[argh(option)]
+    padding_bottom: Option<f32>,
+
+    /// padding (all sides)
+    #[argh(option)]
+    padding: Option<f32>,
+
+    /// padding horizontal (left + right)
+    #[argh(option)]
+    padding_horizontal: Option<f32>,
+
+    /// padding vertical (top + bottom)
+    #[argh(option)]
+    padding_vertical: Option<f32>,
+
     /// shadow color (hex)
     #[argh(option)]
     shadow_color: Option<String>,
@@ -113,6 +133,34 @@ struct AddCmd {
     #[argh(option)]
     gap: Option<f32>,
 
+    /// margin left
+    #[argh(option)]
+    margin_left: Option<f32>,
+
+    /// margin right
+    #[argh(option)]
+    margin_right: Option<f32>,
+
+    /// margin top
+    #[argh(option)]
+    margin_top: Option<f32>,
+
+    /// margin bottom
+    #[argh(option)]
+    margin_bottom: Option<f32>,
+
+    /// margin (all sides)
+    #[argh(option)]
+    margin: Option<f32>,
+
+    /// margin horizontal (left + right)
+    #[argh(option)]
+    margin_horizontal: Option<f32>,
+
+    /// margin vertical (top + bottom)
+    #[argh(option)]
+    margin_vertical: Option<f32>,
+
     /// font size (default 12)
     #[argh(option)]
     font_size: Option<f32>,
@@ -128,6 +176,30 @@ struct AddCmd {
     /// notch alignment: left or right (only effective on notched displays)
     #[argh(option)]
     notch_align: Option<String>,
+
+    /// cross-axis alignment of children: start, center, or end
+    #[argh(option)]
+    align_items: Option<String>,
+
+    /// main-axis alignment of children: start, center, or end
+    #[argh(option)]
+    justify_content: Option<String>,
+
+    /// background color on hover (hex)
+    #[argh(option)]
+    hover_background_color: Option<String>,
+
+    /// label color on hover (hex)
+    #[argh(option)]
+    hover_label_color: Option<String>,
+
+    /// icon color on hover (hex)
+    #[argh(option)]
+    hover_icon_color: Option<String>,
+
+    /// shell command to run on click
+    #[argh(option)]
+    on_click: Option<String>,
 
     /// sort position
     #[argh(option)]
@@ -190,6 +262,26 @@ struct SetCmd {
     #[argh(option)]
     padding_right: Option<f32>,
 
+    /// padding top
+    #[argh(option)]
+    padding_top: Option<f32>,
+
+    /// padding bottom
+    #[argh(option)]
+    padding_bottom: Option<f32>,
+
+    /// padding (all sides)
+    #[argh(option)]
+    padding: Option<f32>,
+
+    /// padding horizontal (left + right)
+    #[argh(option)]
+    padding_horizontal: Option<f32>,
+
+    /// padding vertical (top + bottom)
+    #[argh(option)]
+    padding_vertical: Option<f32>,
+
     /// shadow color (hex)
     #[argh(option)]
     shadow_color: Option<String>,
@@ -210,6 +302,34 @@ struct SetCmd {
     #[argh(option)]
     gap: Option<f32>,
 
+    /// margin left
+    #[argh(option)]
+    margin_left: Option<f32>,
+
+    /// margin right
+    #[argh(option)]
+    margin_right: Option<f32>,
+
+    /// margin top
+    #[argh(option)]
+    margin_top: Option<f32>,
+
+    /// margin bottom
+    #[argh(option)]
+    margin_bottom: Option<f32>,
+
+    /// margin (all sides)
+    #[argh(option)]
+    margin: Option<f32>,
+
+    /// margin horizontal (left + right)
+    #[argh(option)]
+    margin_horizontal: Option<f32>,
+
+    /// margin vertical (top + bottom)
+    #[argh(option)]
+    margin_vertical: Option<f32>,
+
     /// font size (default 12)
     #[argh(option)]
     font_size: Option<f32>,
@@ -225,6 +345,30 @@ struct SetCmd {
     /// notch alignment: left or right (only effective on notched displays)
     #[argh(option)]
     notch_align: Option<String>,
+
+    /// cross-axis alignment of children: start, center, or end
+    #[argh(option)]
+    align_items: Option<String>,
+
+    /// main-axis alignment of children: start, center, or end
+    #[argh(option)]
+    justify_content: Option<String>,
+
+    /// background color on hover (hex)
+    #[argh(option)]
+    hover_background_color: Option<String>,
+
+    /// label color on hover (hex)
+    #[argh(option)]
+    hover_label_color: Option<String>,
+
+    /// icon color on hover (hex)
+    #[argh(option)]
+    hover_icon_color: Option<String>,
+
+    /// shell command to run on click
+    #[argh(option)]
+    on_click: Option<String>,
 
     /// sort position
     #[argh(option)]
@@ -318,15 +462,33 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.corner_radius { obj["corner_radius"] = json!(v); }
             if let Some(v) = c.padding_left { obj["padding_left"] = json!(v); }
             if let Some(v) = c.padding_right { obj["padding_right"] = json!(v); }
+            if let Some(v) = c.padding_top { obj["padding_top"] = json!(v); }
+            if let Some(v) = c.padding_bottom { obj["padding_bottom"] = json!(v); }
+            if let Some(v) = c.padding { obj["padding"] = json!(v); }
+            if let Some(v) = c.padding_horizontal { obj["padding_horizontal"] = json!(v); }
+            if let Some(v) = c.padding_vertical { obj["padding_vertical"] = json!(v); }
             if let Some(v) = c.shadow_color { obj["shadow_color"] = json!(v); }
             if let Some(v) = c.shadow_radius { obj["shadow_radius"] = json!(v); }
             if let Some(v) = c.width { obj["width"] = json!(v); }
             if let Some(v) = c.height { obj["height"] = json!(v); }
             if let Some(v) = c.gap { obj["gap"] = json!(v); }
+            if let Some(v) = c.margin_left { obj["margin_left"] = json!(v); }
+            if let Some(v) = c.margin_right { obj["margin_right"] = json!(v); }
+            if let Some(v) = c.margin_top { obj["margin_top"] = json!(v); }
+            if let Some(v) = c.margin_bottom { obj["margin_bottom"] = json!(v); }
+            if let Some(v) = c.margin { obj["margin"] = json!(v); }
+            if let Some(v) = c.margin_horizontal { obj["margin_horizontal"] = json!(v); }
+            if let Some(v) = c.margin_vertical { obj["margin_vertical"] = json!(v); }
             if let Some(v) = c.font_size { obj["font_size"] = json!(v); }
             if let Some(v) = c.font_weight { obj["font_weight"] = json!(v); }
             if let Some(v) = c.font_family { obj["font_family"] = json!(v); }
             if let Some(v) = c.notch_align { obj["notch_align"] = json!(v); }
+            if let Some(v) = c.align_items { obj["align_items"] = json!(v); }
+            if let Some(v) = c.justify_content { obj["justify_content"] = json!(v); }
+            if let Some(v) = c.hover_background_color { obj["hover_background_color"] = json!(v); }
+            if let Some(v) = c.hover_label_color { obj["hover_label_color"] = json!(v); }
+            if let Some(v) = c.hover_icon_color { obj["hover_icon_color"] = json!(v); }
+            if let Some(v) = c.on_click { obj["on_click"] = json!(v); }
             if let Some(v) = c.position { obj["position"] = json!(v); }
             if let Some(v) = c.display { obj["display"] = json!(v); }
             obj
@@ -344,15 +506,33 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.corner_radius { properties.insert("corner_radius".into(), v.to_string()); }
             if let Some(v) = c.padding_left { properties.insert("padding_left".into(), v.to_string()); }
             if let Some(v) = c.padding_right { properties.insert("padding_right".into(), v.to_string()); }
+            if let Some(v) = c.padding_top { properties.insert("padding_top".into(), v.to_string()); }
+            if let Some(v) = c.padding_bottom { properties.insert("padding_bottom".into(), v.to_string()); }
+            if let Some(v) = c.padding { properties.insert("padding".into(), v.to_string()); }
+            if let Some(v) = c.padding_horizontal { properties.insert("padding_horizontal".into(), v.to_string()); }
+            if let Some(v) = c.padding_vertical { properties.insert("padding_vertical".into(), v.to_string()); }
             if let Some(v) = c.shadow_color { properties.insert("shadow_color".into(), v); }
             if let Some(v) = c.shadow_radius { properties.insert("shadow_radius".into(), v.to_string()); }
             if let Some(v) = c.width { properties.insert("width".into(), v.to_string()); }
             if let Some(v) = c.height { properties.insert("height".into(), v.to_string()); }
             if let Some(v) = c.gap { properties.insert("gap".into(), v.to_string()); }
+            if let Some(v) = c.margin_left { properties.insert("margin_left".into(), v.to_string()); }
+            if let Some(v) = c.margin_right { properties.insert("margin_right".into(), v.to_string()); }
+            if let Some(v) = c.margin_top { properties.insert("margin_top".into(), v.to_string()); }
+            if let Some(v) = c.margin_bottom { properties.insert("margin_bottom".into(), v.to_string()); }
+            if let Some(v) = c.margin { properties.insert("margin".into(), v.to_string()); }
+            if let Some(v) = c.margin_horizontal { properties.insert("margin_horizontal".into(), v.to_string()); }
+            if let Some(v) = c.margin_vertical { properties.insert("margin_vertical".into(), v.to_string()); }
             if let Some(v) = c.font_size { properties.insert("font_size".into(), v.to_string()); }
             if let Some(v) = c.font_weight { properties.insert("font_weight".into(), v); }
             if let Some(v) = c.font_family { properties.insert("font_family".into(), v); }
             if let Some(v) = c.notch_align { properties.insert("notch_align".into(), v); }
+            if let Some(v) = c.align_items { properties.insert("align_items".into(), v); }
+            if let Some(v) = c.justify_content { properties.insert("justify_content".into(), v); }
+            if let Some(v) = c.hover_background_color { properties.insert("hover_background_color".into(), v); }
+            if let Some(v) = c.hover_label_color { properties.insert("hover_label_color".into(), v); }
+            if let Some(v) = c.hover_icon_color { properties.insert("hover_icon_color".into(), v); }
+            if let Some(v) = c.on_click { properties.insert("on_click".into(), v); }
             if let Some(v) = c.position { properties.insert("position".into(), v.to_string()); }
             if let Some(v) = c.display { properties.insert("display".into(), v.to_string()); }
             json!({

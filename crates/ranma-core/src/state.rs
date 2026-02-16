@@ -3,7 +3,9 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, uniffi::Enum)]
 pub enum NodeType {
     Item,
-    Container,
+    Row,
+    Column,
+    Box,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -14,12 +16,23 @@ pub struct NodeStyle {
     pub corner_radius: Option<f32>,
     pub padding_left: Option<f32>,
     pub padding_right: Option<f32>,
+    pub padding_top: Option<f32>,
+    pub padding_bottom: Option<f32>,
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub gap: Option<f32>,
+    pub margin_left: Option<f32>,
+    pub margin_right: Option<f32>,
+    pub margin_top: Option<f32>,
+    pub margin_bottom: Option<f32>,
     pub notch_align: Option<String>,
+    pub align_items: Option<String>,
+    pub justify_content: Option<String>,
+    pub hover_background_color: Option<String>,
+    pub hover_label_color: Option<String>,
+    pub hover_icon_color: Option<String>,
 }
 
 impl Default for NodeStyle {
@@ -31,12 +44,23 @@ impl Default for NodeStyle {
             corner_radius: None,
             padding_left: None,
             padding_right: None,
+            padding_top: None,
+            padding_bottom: None,
             shadow_color: None,
             shadow_radius: None,
             width: None,
             height: None,
             gap: None,
+            margin_left: None,
+            margin_right: None,
+            margin_top: None,
+            margin_bottom: None,
             notch_align: None,
+            align_items: None,
+            justify_content: None,
+            hover_background_color: None,
+            hover_label_color: None,
+            hover_icon_color: None,
         }
     }
 }
@@ -56,6 +80,7 @@ pub struct BarNode {
     pub font_size: Option<f32>,
     pub font_weight: Option<String>,
     pub font_family: Option<String>,
+    pub on_click: Option<String>,
 }
 
 #[derive(Debug, Default)]
@@ -69,8 +94,8 @@ impl BarState {
             let parent = self.find_node_ref(parent_name);
             match parent {
                 Some(p) => {
-                    if !matches!(p.node_type, NodeType::Container) {
-                        return Err(format!("'{}' is not a container", parent_name));
+                    if matches!(p.node_type, NodeType::Item) {
+                        return Err(format!("'{}' is an item and cannot have children", parent_name));
                     }
                 }
                 None => return Err(format!("parent '{}' not found", parent_name)),
@@ -93,7 +118,7 @@ impl BarState {
         for nodes in self.nodes.values_mut() {
             if let Some(pos) = nodes.iter().position(|n| n.name == name) {
                 let node = nodes.remove(pos);
-                if matches!(node.node_type, NodeType::Container) {
+                if !matches!(node.node_type, NodeType::Item) {
                     nodes.retain(|n| n.parent.as_deref() != Some(name));
                 }
                 return Ok(node);
@@ -145,6 +170,47 @@ impl BarState {
             if value.is_empty() { None } else { Some(value.to_string()) }
         }
 
+        fn parse_f32(key: &str, value: &str) -> Result<f32, String> {
+            value.parse().map_err(|_| format!("invalid {}: {}", key, value))
+        }
+
+        // Pass 1: apply shorthands (all → directional) so specifics can override
+        if let Some(v) = properties.get("padding") {
+            let val = Some(parse_f32("padding", v)?);
+            node.style.padding_left = val;
+            node.style.padding_right = val;
+            node.style.padding_top = val;
+            node.style.padding_bottom = val;
+        }
+        if let Some(v) = properties.get("padding_horizontal") {
+            let val = Some(parse_f32("padding_horizontal", v)?);
+            node.style.padding_left = val;
+            node.style.padding_right = val;
+        }
+        if let Some(v) = properties.get("padding_vertical") {
+            let val = Some(parse_f32("padding_vertical", v)?);
+            node.style.padding_top = val;
+            node.style.padding_bottom = val;
+        }
+        if let Some(v) = properties.get("margin") {
+            let val = Some(parse_f32("margin", v)?);
+            node.style.margin_left = val;
+            node.style.margin_right = val;
+            node.style.margin_top = val;
+            node.style.margin_bottom = val;
+        }
+        if let Some(v) = properties.get("margin_horizontal") {
+            let val = Some(parse_f32("margin_horizontal", v)?);
+            node.style.margin_left = val;
+            node.style.margin_right = val;
+        }
+        if let Some(v) = properties.get("margin_vertical") {
+            let val = Some(parse_f32("margin_vertical", v)?);
+            node.style.margin_top = val;
+            node.style.margin_bottom = val;
+        }
+
+        // Pass 2: apply specific properties (override shorthands)
         for (key, value) in properties {
             match key.as_str() {
                 "label" => node.label = optional_str(value),
@@ -158,76 +224,64 @@ impl BarState {
                 "border_color" => node.style.border_color = optional_str(value),
                 "shadow_color" => node.style.shadow_color = optional_str(value),
                 "notch_align" => node.style.notch_align = optional_str(value),
+                "align_items" => node.style.align_items = optional_str(value),
+                "justify_content" => node.style.justify_content = optional_str(value),
+                "hover_background_color" => node.style.hover_background_color = optional_str(value),
+                "hover_label_color" => node.style.hover_label_color = optional_str(value),
+                "hover_icon_color" => node.style.hover_icon_color = optional_str(value),
+                "on_click" => node.on_click = optional_str(value),
                 "border_width" => {
-                    node.style.border_width = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid border_width: {}", value))?,
-                    );
+                    node.style.border_width = Some(parse_f32("border_width", value)?);
                 }
                 "corner_radius" => {
-                    node.style.corner_radius = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid corner_radius: {}", value))?,
-                    );
+                    node.style.corner_radius = Some(parse_f32("corner_radius", value)?);
                 }
                 "padding_left" => {
-                    node.style.padding_left = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid padding_left: {}", value))?,
-                    );
+                    node.style.padding_left = Some(parse_f32("padding_left", value)?);
                 }
                 "padding_right" => {
-                    node.style.padding_right = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid padding_right: {}", value))?,
-                    );
+                    node.style.padding_right = Some(parse_f32("padding_right", value)?);
+                }
+                "padding_top" => {
+                    node.style.padding_top = Some(parse_f32("padding_top", value)?);
+                }
+                "padding_bottom" => {
+                    node.style.padding_bottom = Some(parse_f32("padding_bottom", value)?);
                 }
                 "shadow_radius" => {
-                    node.style.shadow_radius = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid shadow_radius: {}", value))?,
-                    );
+                    node.style.shadow_radius = Some(parse_f32("shadow_radius", value)?);
                 }
                 "width" => {
                     node.style.width = if value.is_empty() {
                         None
                     } else {
-                        Some(
-                            value
-                                .parse()
-                                .map_err(|_| format!("invalid width: {}", value))?,
-                        )
+                        Some(parse_f32("width", value)?)
                     };
                 }
                 "height" => {
-                    node.style.height = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid height: {}", value))?,
-                    );
+                    node.style.height = Some(parse_f32("height", value)?);
                 }
                 "gap" => {
                     node.style.gap = if value.is_empty() {
                         None
                     } else {
-                        Some(
-                            value
-                                .parse()
-                                .map_err(|_| format!("invalid gap: {}", value))?,
-                        )
+                        Some(parse_f32("gap", value)?)
                     };
                 }
+                "margin_left" => {
+                    node.style.margin_left = Some(parse_f32("margin_left", value)?);
+                }
+                "margin_right" => {
+                    node.style.margin_right = Some(parse_f32("margin_right", value)?);
+                }
+                "margin_top" => {
+                    node.style.margin_top = Some(parse_f32("margin_top", value)?);
+                }
+                "margin_bottom" => {
+                    node.style.margin_bottom = Some(parse_f32("margin_bottom", value)?);
+                }
                 "font_size" => {
-                    node.font_size = Some(
-                        value
-                            .parse()
-                            .map_err(|_| format!("invalid font_size: {}", value))?,
-                    );
+                    node.font_size = Some(parse_f32("font_size", value)?);
                 }
                 "position" => {
                     node.position = value
@@ -235,6 +289,9 @@ impl BarState {
                         .map_err(|_| format!("invalid position: {}", value))?;
                 }
                 "display" => {}
+                // Shorthands handled in pass 1
+                "padding" | "padding_horizontal" | "padding_vertical"
+                | "margin" | "margin_horizontal" | "margin_vertical" => {}
                 _ => return Err(format!("unknown property: {}", key)),
             }
         }

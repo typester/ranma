@@ -36,23 +36,21 @@ class BarWindow: NSWindow {
         case .left:
             if let area = screen.auxiliaryTopLeftArea {
                 x = area.maxX - contentSize.width
-                y = area.midY - contentSize.height / 2
             } else {
                 x = screenFrame.midX - contentSize.width / 2
-                let visibleFrame = screen.visibleFrame
-                let menuBarHeight = screenFrame.maxY - visibleFrame.maxY
-                y = screenFrame.maxY - menuBarHeight + (menuBarHeight - contentSize.height) / 2
             }
+            let visibleFrameL = screen.visibleFrame
+            let menuBarHeightL = screenFrame.maxY - visibleFrameL.maxY
+            y = screenFrame.maxY - menuBarHeightL + (menuBarHeightL - contentSize.height) / 2
         case .right:
             if let area = screen.auxiliaryTopRightArea {
                 x = area.minX
-                y = area.midY - contentSize.height / 2
             } else {
                 x = screenFrame.midX - contentSize.width / 2
-                let visibleFrame = screen.visibleFrame
-                let menuBarHeight = screenFrame.maxY - visibleFrame.maxY
-                y = screenFrame.maxY - menuBarHeight + (menuBarHeight - contentSize.height) / 2
             }
+            let visibleFrameR = screen.visibleFrame
+            let menuBarHeightR = screenFrame.maxY - visibleFrameR.maxY
+            y = screenFrame.maxY - menuBarHeightR + (menuBarHeightR - contentSize.height) / 2
         }
         let newFrame = NSRect(
             x: x, y: y,

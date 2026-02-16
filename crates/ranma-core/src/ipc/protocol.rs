@@ -33,6 +33,10 @@ pub enum Command {
         #[serde(default)]
         padding_right: Option<f32>,
         #[serde(default)]
+        padding_top: Option<f32>,
+        #[serde(default)]
+        padding_bottom: Option<f32>,
+        #[serde(default)]
         shadow_color: Option<String>,
         #[serde(default)]
         shadow_radius: Option<f32>,
@@ -43,6 +47,26 @@ pub enum Command {
         #[serde(default)]
         gap: Option<f32>,
         #[serde(default)]
+        margin_left: Option<f32>,
+        #[serde(default)]
+        margin_right: Option<f32>,
+        #[serde(default)]
+        margin_top: Option<f32>,
+        #[serde(default)]
+        margin_bottom: Option<f32>,
+        #[serde(default)]
+        padding: Option<f32>,
+        #[serde(default)]
+        padding_horizontal: Option<f32>,
+        #[serde(default)]
+        padding_vertical: Option<f32>,
+        #[serde(default)]
+        margin: Option<f32>,
+        #[serde(default)]
+        margin_horizontal: Option<f32>,
+        #[serde(default)]
+        margin_vertical: Option<f32>,
+        #[serde(default)]
         font_size: Option<f32>,
         #[serde(default)]
         font_weight: Option<String>,
@@ -50,6 +74,18 @@ pub enum Command {
         font_family: Option<String>,
         #[serde(default)]
         notch_align: Option<String>,
+        #[serde(default)]
+        align_items: Option<String>,
+        #[serde(default)]
+        justify_content: Option<String>,
+        #[serde(default)]
+        hover_background_color: Option<String>,
+        #[serde(default)]
+        hover_label_color: Option<String>,
+        #[serde(default)]
+        hover_icon_color: Option<String>,
+        #[serde(default)]
+        on_click: Option<String>,
         #[serde(default)]
         position: Option<i32>,
         #[serde(default)]
@@ -97,12 +133,24 @@ pub struct NodeDto {
     pub corner_radius: Option<f32>,
     pub padding_left: Option<f32>,
     pub padding_right: Option<f32>,
+    pub padding_top: Option<f32>,
+    pub padding_bottom: Option<f32>,
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub gap: Option<f32>,
+    pub margin_left: Option<f32>,
+    pub margin_right: Option<f32>,
+    pub margin_top: Option<f32>,
+    pub margin_bottom: Option<f32>,
     pub notch_align: Option<String>,
+    pub align_items: Option<String>,
+    pub justify_content: Option<String>,
+    pub hover_background_color: Option<String>,
+    pub hover_label_color: Option<String>,
+    pub hover_icon_color: Option<String>,
+    pub on_click: Option<String>,
     pub font_size: Option<f32>,
     pub font_weight: Option<String>,
     pub font_family: Option<String>,
@@ -114,7 +162,9 @@ impl From<BarNode> for NodeDto {
             name: node.name,
             node_type: match node.node_type {
                 crate::state::NodeType::Item => "item".to_string(),
-                crate::state::NodeType::Container => "container".to_string(),
+                crate::state::NodeType::Row => "row".to_string(),
+                crate::state::NodeType::Column => "column".to_string(),
+                crate::state::NodeType::Box => "box".to_string(),
             },
             parent: node.parent,
             position: node.position,
@@ -129,12 +179,24 @@ impl From<BarNode> for NodeDto {
             corner_radius: node.style.corner_radius,
             padding_left: node.style.padding_left,
             padding_right: node.style.padding_right,
+            padding_top: node.style.padding_top,
+            padding_bottom: node.style.padding_bottom,
             shadow_color: node.style.shadow_color,
             shadow_radius: node.style.shadow_radius,
             width: node.style.width,
             height: node.style.height,
             gap: node.style.gap,
+            margin_left: node.style.margin_left,
+            margin_right: node.style.margin_right,
+            margin_top: node.style.margin_top,
+            margin_bottom: node.style.margin_bottom,
             notch_align: node.style.notch_align,
+            align_items: node.style.align_items,
+            justify_content: node.style.justify_content,
+            hover_background_color: node.style.hover_background_color,
+            hover_label_color: node.style.hover_label_color,
+            hover_icon_color: node.style.hover_icon_color,
+            on_click: node.on_click,
             font_size: node.font_size,
             font_weight: node.font_weight,
             font_family: node.font_family,

@@ -1,70 +1,126 @@
 import AppKit
 
+indirect enum TreeEntry {
+    case row(BarNode, [TreeEntry])
+    case column(BarNode, [TreeEntry])
+    case box(BarNode, [TreeEntry])
+    case item(BarNode)
+}
+
 enum WindowSizer {
-    private static let defaultBarHeight: CGFloat = 24
-    private static let itemSpacing: CGFloat = 8
     private static let containerSpacing: CGFloat = 8
     private static let iconLabelGap: CGFloat = 4
     private static let defaultFontSize: CGFloat = 13
     private static let defaultIconSize: CGFloat = 16
 
-    static func calculateWidth(for nodes: [BarNode]) -> CGFloat {
+    static func calculateSize(for nodes: [BarNode]) -> CGSize {
         let tree = resolveTree(nodes)
-        if tree.isEmpty { return 0 }
+        if tree.isEmpty { return .zero }
 
         var totalWidth: CGFloat = 0
-        for (index, topLevel) in tree.enumerated() {
-            if index > 0 {
-                totalWidth += containerSpacing
-            }
-            totalWidth += measureTopLevel(topLevel)
+        var maxHeight: CGFloat = 0
+        for (index, entry) in tree.enumerated() {
+            if index > 0 { totalWidth += containerSpacing }
+            let size = measureEntry(entry)
+            totalWidth += size.width
+            maxHeight = max(maxHeight, size.height)
         }
-        return max(totalWidth, 40)
+        return CGSize(width: max(totalWidth, 40), height: max(maxHeight, 24))
     }
 
-    private static func measureTopLevel(_ entry: TreeEntry) -> CGFloat {
+    static func measureEntry(_ entry: TreeEntry) -> CGSize {
         switch entry {
-        case .container(let node, let children):
-            let pl = CGFloat(node.style.paddingLeft ?? 0)
-            let pr = CGFloat(node.style.paddingRight ?? 0)
-            let gap = CGFloat(node.style.gap ?? 8)
-            var inner: CGFloat = 0
-            for (index, child) in children.enumerated() {
-                if index > 0 { inner += gap }
-                inner += measureItem(child)
-            }
-            return pl + inner + pr
+        case .row(let node, let children):
+            return measureLayout(node: node, children: children, axis: .horizontal)
+        case .column(let node, let children):
+            return measureLayout(node: node, children: children, axis: .vertical)
+        case .box(let node, let children):
+            return measureLayout(node: node, children: children, axis: .stacked)
         case .item(let node):
             return measureItem(node)
         }
     }
 
-    private static func measureItem(_ node: BarNode) -> CGFloat {
-        if let w = node.style.width { return CGFloat(w) }
+    private enum Axis {
+        case horizontal, vertical, stacked
+    }
 
-        var width: CGFloat = 0
+    private static func measureLayout(node: BarNode, children: [TreeEntry], axis: Axis) -> CGSize {
+        let pl = CGFloat(node.style.paddingLeft ?? 0)
+        let pr = CGFloat(node.style.paddingRight ?? 0)
+        let pt = CGFloat(node.style.paddingTop ?? 0)
+        let pb = CGFloat(node.style.paddingBottom ?? 0)
+        let gap = CGFloat(node.style.gap ?? 0)
+        let ml = CGFloat(node.style.marginLeft ?? 0)
+        let mr = CGFloat(node.style.marginRight ?? 0)
+        let mt = CGFloat(node.style.marginTop ?? 0)
+        let mb = CGFloat(node.style.marginBottom ?? 0)
+
+        var innerWidth: CGFloat = 0
+        var innerHeight: CGFloat = 0
+
+        for (index, child) in children.enumerated() {
+            let childSize = measureEntry(child)
+            switch axis {
+            case .horizontal:
+                if index > 0 { innerWidth += gap }
+                innerWidth += childSize.width
+                innerHeight = max(innerHeight, childSize.height)
+            case .vertical:
+                if index > 0 { innerHeight += gap }
+                innerWidth = max(innerWidth, childSize.width)
+                innerHeight += childSize.height
+            case .stacked:
+                innerWidth = max(innerWidth, childSize.width)
+                innerHeight = max(innerHeight, childSize.height)
+            }
+        }
+
+        let contentWidth = pl + innerWidth + pr
+        let contentHeight = pt + innerHeight + pb
+
+        let w = node.style.width.map { CGFloat($0) } ?? contentWidth
+        let h = node.style.height.map { CGFloat($0) } ?? contentHeight
+
+        return CGSize(width: ml + w + mr, height: mt + h + mb)
+    }
+
+    private static func measureItem(_ node: BarNode) -> CGSize {
+        let ml = CGFloat(node.style.marginLeft ?? 0)
+        let mr = CGFloat(node.style.marginRight ?? 0)
+        let mt = CGFloat(node.style.marginTop ?? 0)
+        let mb = CGFloat(node.style.marginBottom ?? 0)
+
+        if let w = node.style.width, let h = node.style.height {
+            return CGSize(width: ml + CGFloat(w) + mr, height: mt + CGFloat(h) + mb)
+        }
+
+        var contentWidth: CGFloat = 0
         let font = fontForNode(node)
 
         if let iconName = node.icon,
            let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil) {
             let config = NSImage.SymbolConfiguration(pointSize: iconSizeForNode(node), weight: .medium)
             let configured = image.withSymbolConfiguration(config) ?? image
-            width += configured.size.width
+            contentWidth += configured.size.width
         }
 
         if let label = node.label {
             let attrs: [NSAttributedString.Key: Any] = [.font: font]
             let size = (label as NSString).size(withAttributes: attrs)
-            if width > 0 { width += iconLabelGap }
-            width += size.width
+            if contentWidth > 0 { contentWidth += iconLabelGap }
+            contentWidth += size.width
         }
 
         let pl = CGFloat(node.style.paddingLeft ?? 0)
         let pr = CGFloat(node.style.paddingRight ?? 0)
-        return pl + width + pr
+        let w = node.style.width.map { CGFloat($0) } ?? (pl + contentWidth + pr)
+        let h = node.style.height.map { CGFloat($0) } ?? font.pointSize + 4
+
+        return CGSize(width: ml + w + mr, height: mt + h + mb)
     }
 
-    private static func fontForNode(_ node: BarNode) -> NSFont {
+    static func fontForNode(_ node: BarNode) -> NSFont {
         let size = CGFloat(node.fontSize ?? Float(defaultFontSize))
         if let family = node.fontFamily, let font = NSFont(name: family, size: size) {
             return font
@@ -73,7 +129,7 @@ enum WindowSizer {
         return NSFont.systemFont(ofSize: size, weight: weight)
     }
 
-    private static func iconSizeForNode(_ node: BarNode) -> CGFloat {
+    static func iconSizeForNode(_ node: BarNode) -> CGFloat {
         CGFloat(node.fontSize ?? Float(defaultIconSize))
     }
 
@@ -93,19 +149,15 @@ enum WindowSizer {
     }
 }
 
-enum TreeEntry {
-    case container(BarNode, [BarNode])
-    case item(BarNode)
+func nodeForEntry(_ entry: TreeEntry) -> BarNode {
+    switch entry {
+    case .row(let node, _), .column(let node, _), .box(let node, _), .item(let node):
+        return node
+    }
 }
 
 func notchAlignmentForEntry(_ entry: TreeEntry) -> BarWindow.Alignment {
-    let alignStr: String?
-    switch entry {
-    case .container(let node, _):
-        alignStr = node.style.notchAlign
-    case .item(let node):
-        alignStr = node.style.notchAlign
-    }
+    let alignStr = nodeForEntry(entry).style.notchAlign
     switch alignStr {
     case "left": return .left
     case "right": return .right
@@ -113,19 +165,44 @@ func notchAlignmentForEntry(_ entry: TreeEntry) -> BarWindow.Alignment {
     }
 }
 
+func collectNodes(from entry: TreeEntry) -> [BarNode] {
+    switch entry {
+    case .row(let node, let children), .column(let node, let children), .box(let node, let children):
+        var result = [node]
+        for child in children {
+            result.append(contentsOf: collectNodes(from: child))
+        }
+        return result
+    case .item(let node):
+        return [node]
+    }
+}
+
 func resolveTree(_ nodes: [BarNode]) -> [TreeEntry] {
     let sorted = nodes.sorted { $0.position < $1.position }
     let topLevel = sorted.filter { $0.parent == nil }
 
-    return topLevel.map { node in
+    func buildEntry(_ node: BarNode) -> TreeEntry {
         switch node.nodeType {
-        case .container:
+        case .row:
             let children = sorted
                 .filter { $0.parent == node.name }
-                .sorted { $0.position < $1.position }
-            return .container(node, children)
+                .map { buildEntry($0) }
+            return .row(node, children)
+        case .column:
+            let children = sorted
+                .filter { $0.parent == node.name }
+                .map { buildEntry($0) }
+            return .column(node, children)
+        case .box:
+            let children = sorted
+                .filter { $0.parent == node.name }
+                .map { buildEntry($0) }
+            return .box(node, children)
         case .item:
             return .item(node)
         }
     }
+
+    return topLevel.map { buildEntry($0) }
 }

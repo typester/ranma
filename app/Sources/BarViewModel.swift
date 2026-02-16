@@ -103,13 +103,7 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         var grouped: [BarWindow.Alignment: [BarNode]] = [:]
         for entry in tree {
             let alignment = notchAlignmentForEntry(entry)
-            switch entry {
-            case .container(let node, let children):
-                grouped[alignment, default: []].append(node)
-                grouped[alignment, default: []].append(contentsOf: children)
-            case .item(let node):
-                grouped[alignment, default: []].append(node)
-            }
+            grouped[alignment, default: []].append(contentsOf: collectNodes(from: entry))
         }
 
         for alignment in [BarWindow.Alignment.left, .right] {

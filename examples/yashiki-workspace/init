@@ -8,6 +8,7 @@
 # Prerequisites:
 #   - yashiki running
 #   - python3 (macOS built-in)
+#   - reap (brew install typester/reap/reap)
 #   - Hack Nerd Font (brew install --cask font-hack-nerd-font)
 #
 # Usage:
@@ -17,4 +18,6 @@ SCRIPT_DIR="${0:A:h}"
 
 # All container/item creation is handled by the bridge based on
 # actual display IDs reported by yashiki.
-"$SCRIPT_DIR/plugins/yashiki_bridge.py" &
+# reap watches the parent process (ranma-server) and terminates
+# the bridge when ranma exits.
+reap --watch $PPID "$SCRIPT_DIR/plugins/yashiki_bridge.py" &

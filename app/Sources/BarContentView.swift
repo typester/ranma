@@ -1,19 +1,21 @@
 import AppKit
 
 class BarContentView: NSView {
-    private let defaultBarHeight: CGFloat = 24
-    private let itemSpacing: CGFloat = 8
     private let containerSpacing: CGFloat = 8
     private let iconLabelGap: CGFloat = 4
-    private let defaultFontSize: CGFloat = 13
-    private let defaultIconSize: CGFloat = 16
 
     private var nodes: [BarNode] = []
+    private var containerRects: [(NSRect, BarNode)] = []
+    private var hoveredContainer: String? = nil
+
+    private struct DrawContext {
+        var hoverLabelColor: NSColor?
+        var hoverIconColor: NSColor?
+    }
 
     override var intrinsicContentSize: NSSize {
-        let totalWidth = WindowSizer.calculateWidth(for: nodes)
-        let height = calculateBarHeight()
-        return NSSize(width: totalWidth, height: height)
+        let size = WindowSizer.calculateSize(for: nodes)
+        return NSSize(width: size.width, height: size.height)
     }
 
     func updateNodes(_ newNodes: [BarNode]) {
@@ -22,139 +24,255 @@ class BarContentView: NSView {
         needsDisplay = true
     }
 
-    private func calculateBarHeight() -> CGFloat {
-        let tree = resolveTree(nodes)
-        var maxHeight = defaultBarHeight
-        for entry in tree {
-            if case .container(let node, _) = entry, let h = node.style.height {
-                maxHeight = max(maxHeight, CGFloat(h))
+    // MARK: - Mouse tracking
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways],
+            owner: self, userInfo: nil
+        )
+        addTrackingArea(area)
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        let pt = convert(event.locationInWindow, from: nil)
+        let hit = containerRects.last(where: { $0.0.contains(pt) })?.1.name
+        if hoveredContainer != hit {
+            hoveredContainer = hit
+            needsDisplay = true
+        }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        if hoveredContainer != nil {
+            hoveredContainer = nil
+            needsDisplay = true
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let pt = convert(event.locationInWindow, from: nil)
+        for (rect, node) in containerRects.reversed() {
+            if rect.contains(pt), let cmd = node.onClick {
+                DispatchQueue.global(qos: .utility).async {
+                    let proc = Process()
+                    proc.executableURL = URL(fileURLWithPath: "/bin/sh")
+                    proc.arguments = ["-c", cmd]
+                    try? proc.run()
+                }
+                return
             }
         }
-        return maxHeight
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        containerRects.removeAll()
         let tree = resolveTree(nodes)
+        let ctx = DrawContext(hoverLabelColor: nil, hoverIconColor: nil)
         var x: CGFloat = 0
 
         for (index, entry) in tree.enumerated() {
             if index > 0 { x += containerSpacing }
-
-            switch entry {
-            case .container(let container, let children):
-                x += drawContainer(container, children: children, at: x)
-            case .item(let node):
-                x += drawItem(node, at: x, containerHeight: bounds.height)
-            }
+            let size = drawEntry(entry, at: NSPoint(x: x, y: 0), availableHeight: bounds.height, context: ctx)
+            x += size.width
         }
     }
 
-    private func drawContainer(_ container: BarNode, children: [BarNode], at x: CGFloat) -> CGFloat {
-        let pl = CGFloat(container.style.paddingLeft ?? 0)
-        let pr = CGFloat(container.style.paddingRight ?? 0)
-        let gap = CGFloat(container.style.gap ?? 8)
+    // MARK: - Recursive drawing
 
-        var innerWidth: CGFloat = 0
-        for (index, child) in children.enumerated() {
-            if index > 0 { innerWidth += gap }
-            innerWidth += measureItemWidth(child)
+    private func drawEntry(_ entry: TreeEntry, at origin: NSPoint, availableHeight: CGFloat, context: DrawContext) -> CGSize {
+        switch entry {
+        case .row(let node, let children):
+            return drawLayout(node: node, children: children, axis: .horizontal, at: origin, availableHeight: availableHeight, context: context)
+        case .column(let node, let children):
+            return drawLayout(node: node, children: children, axis: .vertical, at: origin, availableHeight: availableHeight, context: context)
+        case .box(let node, let children):
+            return drawLayout(node: node, children: children, axis: .stacked, at: origin, availableHeight: availableHeight, context: context)
+        case .item(let node):
+            return drawItem(node, at: origin, availableHeight: availableHeight, context: context)
+        }
+    }
+
+    private enum Axis {
+        case horizontal, vertical, stacked
+    }
+
+    private func drawLayout(node: BarNode, children: [TreeEntry], axis: Axis, at origin: NSPoint, availableHeight: CGFloat, context: DrawContext) -> CGSize {
+        let totalSize = WindowSizer.measureEntry(axis == .horizontal ? .row(node, children) :
+                                                  axis == .vertical ? .column(node, children) :
+                                                  .box(node, children))
+
+        let ml = CGFloat(node.style.marginLeft ?? 0)
+        let mr = CGFloat(node.style.marginRight ?? 0)
+        let mt = CGFloat(node.style.marginTop ?? 0)
+        let mb = CGFloat(node.style.marginBottom ?? 0)
+
+        let contentWidth = totalSize.width - ml - mr
+        let contentHeight = totalSize.height - mt - mb
+
+        // Center vertically within available height
+        let contentY = origin.y + (availableHeight - totalSize.height) / 2 + mb
+        let contentX = origin.x + ml
+        let contentRect = NSRect(x: contentX, y: contentY, width: contentWidth, height: contentHeight)
+
+        // Record container rect for hit testing
+        containerRects.append((contentRect, node))
+
+        // Determine hover state
+        let isHovered = hoveredContainer == node.name
+        var childContext = context
+        if isHovered {
+            if let c = node.style.hoverLabelColor.flatMap({ NSColor.fromHex($0) }) { childContext.hoverLabelColor = c }
+            if let c = node.style.hoverIconColor.flatMap({ NSColor.fromHex($0) }) { childContext.hoverIconColor = c }
         }
 
-        let totalWidth = pl + innerWidth + pr
-        let containerHeight = CGFloat(container.style.height ?? Float(defaultBarHeight))
-        let containerY = (bounds.height - containerHeight) / 2
-        let containerRect = NSRect(x: x, y: containerY, width: totalWidth, height: containerHeight)
+        // Draw background/border/shadow
+        drawDecoration(node: node, in: contentRect, hovered: isHovered)
 
-        let cr = CGFloat(container.style.cornerRadius ?? 0)
-        let path = NSBezierPath(roundedRect: containerRect, xRadius: cr, yRadius: cr)
+        let pl = CGFloat(node.style.paddingLeft ?? 0)
+        let pr = CGFloat(node.style.paddingRight ?? 0)
+        let pt = CGFloat(node.style.paddingTop ?? 0)
+        let pb = CGFloat(node.style.paddingBottom ?? 0)
+        let gap = CGFloat(node.style.gap ?? 0)
+        let alignItems = node.style.alignItems ?? "start"
+        let justifyContent = node.style.justifyContent ?? "start"
+
+        switch axis {
+        case .horizontal:
+            let innerWidth = contentWidth - pl - pr
+            let innerHeight = contentHeight - pt - pb
+            // Calculate total children width for justify_content
+            var totalChildWidth: CGFloat = 0
+            for (index, child) in children.enumerated() {
+                if index > 0 { totalChildWidth += gap }
+                totalChildWidth += WindowSizer.measureEntry(child).width
+            }
+            var cx: CGFloat
+            switch justifyContent {
+            case "center": cx = contentX + pl + (innerWidth - totalChildWidth) / 2
+            case "end":    cx = contentX + pl + innerWidth - totalChildWidth
+            default:       cx = contentX + pl
+            }
+            for (index, child) in children.enumerated() {
+                if index > 0 { cx += gap }
+                let childSize = WindowSizer.measureEntry(child)
+                let childY: CGFloat
+                switch alignItems {
+                case "center": childY = contentY + pb + (innerHeight - childSize.height) / 2
+                case "end":    childY = contentY + pb
+                default:       childY = contentY + pb + innerHeight - childSize.height // start = top
+                }
+                let drawn = drawEntry(child, at: NSPoint(x: cx, y: childY), availableHeight: childSize.height, context: childContext)
+                cx += drawn.width
+            }
+        case .vertical:
+            let innerWidth = contentWidth - pl - pr
+            let innerHeight = contentHeight - pt - pb
+            // Calculate total children height for justify_content
+            var totalChildHeight: CGFloat = 0
+            for (index, child) in children.enumerated() {
+                if index > 0 { totalChildHeight += gap }
+                totalChildHeight += WindowSizer.measureEntry(child).height
+            }
+            var cy: CGFloat
+            switch justifyContent {
+            case "center": cy = contentY + contentHeight - pt - (innerHeight - totalChildHeight) / 2
+            case "end":    cy = contentY + pb + totalChildHeight
+            default:       cy = contentY + contentHeight - pt // start = top
+            }
+            for (index, child) in children.enumerated() {
+                if index > 0 { cy -= gap }
+                let childSize = WindowSizer.measureEntry(child)
+                cy -= childSize.height
+                let childX: CGFloat
+                switch alignItems {
+                case "center": childX = contentX + pl + (innerWidth - childSize.width) / 2
+                case "end":    childX = contentX + pl + innerWidth - childSize.width
+                default:       childX = contentX + pl
+                }
+                let _ = drawEntry(child, at: NSPoint(x: childX, y: cy), availableHeight: childSize.height, context: childContext)
+            }
+        case .stacked:
+            for child in children {
+                let _ = drawEntry(child, at: NSPoint(x: contentX + pl, y: contentY + pb), availableHeight: contentHeight - pt - pb, context: childContext)
+            }
+        }
+
+        return totalSize
+    }
+
+    private func drawDecoration(node: BarNode, in rect: NSRect, hovered: Bool = false) {
+        let effectiveBg = hovered ? (node.style.hoverBackgroundColor ?? node.style.backgroundColor) : node.style.backgroundColor
+        let hasDecoration = effectiveBg != nil
+            || node.style.borderColor != nil
+            || node.style.shadowColor != nil
+
+        guard hasDecoration else { return }
+
+        let cr = CGFloat(node.style.cornerRadius ?? 0)
+        let path = NSBezierPath(roundedRect: rect, xRadius: cr, yRadius: cr)
 
         let gfxContext = NSGraphicsContext.current
-        if let shadowHex = container.style.shadowColor, let shadowColor = NSColor.fromHex(shadowHex) {
+        if let shadowHex = node.style.shadowColor, let shadowColor = NSColor.fromHex(shadowHex) {
             gfxContext?.saveGraphicsState()
             let shadow = NSShadow()
             shadow.shadowColor = shadowColor
-            shadow.shadowBlurRadius = CGFloat(container.style.shadowRadius ?? 4)
+            shadow.shadowBlurRadius = CGFloat(node.style.shadowRadius ?? 4)
             shadow.shadowOffset = NSSize(width: 0, height: -1)
             shadow.set()
         }
 
-        if let bgHex = container.style.backgroundColor, let bgColor = NSColor.fromHex(bgHex) {
+        if let bgHex = effectiveBg, let bgColor = NSColor.fromHex(bgHex) {
             bgColor.setFill()
             path.fill()
         }
 
-        if container.style.shadowColor != nil {
+        if node.style.shadowColor != nil {
             gfxContext?.restoreGraphicsState()
         }
 
-        let bw = CGFloat(container.style.borderWidth ?? 0)
-        if bw > 0, let borderHex = container.style.borderColor, let borderColor = NSColor.fromHex(borderHex) {
+        let bw = CGFloat(node.style.borderWidth ?? 0)
+        if bw > 0, let borderHex = node.style.borderColor, let borderColor = NSColor.fromHex(borderHex) {
             borderColor.setStroke()
             path.lineWidth = bw
             path.stroke()
         }
-
-        var cx = x + pl
-        for (index, child) in children.enumerated() {
-            if index > 0 { cx += gap }
-            cx += drawItem(child, at: cx, containerHeight: containerHeight, containerY: containerY)
-        }
-
-        return totalWidth
     }
 
-    private func drawItem(_ node: BarNode, at x: CGFloat, containerHeight: CGFloat, containerY: CGFloat = 0) -> CGFloat {
-        let centerY = containerY + containerHeight / 2
-        let font = fontForNode(node)
-        let iconSize = iconSizeForNode(node)
+    // MARK: - Item drawing
 
-        let hasBackground = node.style.backgroundColor != nil
-            || node.style.borderColor != nil
-            || node.style.shadowColor != nil
+    private func drawItem(_ node: BarNode, at origin: NSPoint, availableHeight: CGFloat, context: DrawContext) -> CGSize {
+        let totalSize = WindowSizer.measureEntry(.item(node))
+
+        let ml = CGFloat(node.style.marginLeft ?? 0)
+        let mr = CGFloat(node.style.marginRight ?? 0)
+        let mt = CGFloat(node.style.marginTop ?? 0)
+        let mb = CGFloat(node.style.marginBottom ?? 0)
+
+        let itemWidth = totalSize.width - ml - mr
+        let itemHeight = totalSize.height - mt - mb
+
+        // Center vertically within available height
+        let itemY = origin.y + (availableHeight - totalSize.height) / 2 + mb
+        let itemX = origin.x + ml
+        let itemRect = NSRect(x: itemX, y: itemY, width: itemWidth, height: itemHeight)
+
+        // Draw background/border/shadow
+        drawDecoration(node: node, in: itemRect)
+
+        // Draw content centered within item
+        let font = WindowSizer.fontForNode(node)
+        let iconSize = WindowSizer.iconSizeForNode(node)
+        let centerY = itemY + itemHeight / 2
         let pl = CGFloat(node.style.paddingLeft ?? 0)
         let pr = CGFloat(node.style.paddingRight ?? 0)
 
         let contentWidth = measureContentWidth(node)
-        let totalWidth = node.style.width.map { CGFloat($0) } ?? (pl + contentWidth + pr)
-
-        // Draw background/border/shadow if styled
-        if hasBackground {
-            let bgHeight = node.style.height.map { CGFloat($0) } ?? containerHeight
-            let bgY = containerY + (containerHeight - bgHeight) / 2
-            let bgRect = NSRect(x: x, y: bgY, width: totalWidth, height: bgHeight)
-            let cr = CGFloat(node.style.cornerRadius ?? 0)
-            let path = NSBezierPath(roundedRect: bgRect, xRadius: cr, yRadius: cr)
-
-            let gfxContext = NSGraphicsContext.current
-            if let shadowHex = node.style.shadowColor, let shadowColor = NSColor.fromHex(shadowHex) {
-                gfxContext?.saveGraphicsState()
-                let shadow = NSShadow()
-                shadow.shadowColor = shadowColor
-                shadow.shadowBlurRadius = CGFloat(node.style.shadowRadius ?? 4)
-                shadow.shadowOffset = NSSize(width: 0, height: -1)
-                shadow.set()
-            }
-
-            if let bgHex = node.style.backgroundColor, let bgColor = NSColor.fromHex(bgHex) {
-                bgColor.setFill()
-                path.fill()
-            }
-
-            if node.style.shadowColor != nil {
-                gfxContext?.restoreGraphicsState()
-            }
-
-            let bw = CGFloat(node.style.borderWidth ?? 0)
-            if bw > 0, let borderHex = node.style.borderColor, let borderColor = NSColor.fromHex(borderHex) {
-                borderColor.setStroke()
-                path.lineWidth = bw
-                path.stroke()
-            }
-        }
-
-        // Draw content — center within totalWidth
-        let contentOffset = (totalWidth - pl - pr - contentWidth) / 2
-        var currentX = x + pl + contentOffset
+        let contentOffset = (itemWidth - pl - pr - contentWidth) / 2
+        var currentX = itemX + pl + contentOffset
 
         if let iconName = node.icon,
            let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
@@ -162,7 +280,7 @@ class BarContentView: NSView {
             let config = NSImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
             let configured = image.withSymbolConfiguration(config) ?? image
 
-            let tintColor = node.iconColor.flatMap { NSColor.fromHex($0) } ?? .white
+            let tintColor = context.hoverIconColor ?? node.iconColor.flatMap { NSColor.fromHex($0) } ?? .white
             let tinted = configured.tinted(with: tintColor)
 
             let imageSize = tinted.size
@@ -181,7 +299,7 @@ class BarContentView: NSView {
         }
 
         if let label = node.label {
-            let labelColor = node.labelColor.flatMap { NSColor.fromHex($0) } ?? .white
+            let labelColor = context.hoverLabelColor ?? node.labelColor.flatMap { NSColor.fromHex($0) } ?? .white
             let attrs: [NSAttributedString.Key: Any] = [
                 .foregroundColor: labelColor,
                 .font: font,
@@ -196,16 +314,16 @@ class BarContentView: NSView {
             (label as NSString).draw(in: textRect, withAttributes: attrs)
         }
 
-        return totalWidth
+        return totalSize
     }
 
     private func measureContentWidth(_ node: BarNode) -> CGFloat {
         var width: CGFloat = 0
-        let font = fontForNode(node)
+        let font = WindowSizer.fontForNode(node)
 
         if let iconName = node.icon,
            let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil) {
-            let config = NSImage.SymbolConfiguration(pointSize: iconSizeForNode(node), weight: .medium)
+            let config = NSImage.SymbolConfiguration(pointSize: WindowSizer.iconSizeForNode(node), weight: .medium)
             let configured = image.withSymbolConfiguration(config) ?? image
             width += configured.size.width
         }
@@ -218,42 +336,6 @@ class BarContentView: NSView {
         }
 
         return width
-    }
-
-    private func measureItemWidth(_ node: BarNode) -> CGFloat {
-        if let w = node.style.width { return CGFloat(w) }
-        let contentWidth = measureContentWidth(node)
-        let pl = CGFloat(node.style.paddingLeft ?? 0)
-        let pr = CGFloat(node.style.paddingRight ?? 0)
-        return pl + contentWidth + pr
-    }
-
-    private func fontForNode(_ node: BarNode) -> NSFont {
-        let size = CGFloat(node.fontSize ?? Float(defaultFontSize))
-        if let family = node.fontFamily, let font = NSFont(name: family, size: size) {
-            return font
-        }
-        let weight = fontWeight(from: node.fontWeight)
-        return NSFont.systemFont(ofSize: size, weight: weight)
-    }
-
-    private func iconSizeForNode(_ node: BarNode) -> CGFloat {
-        CGFloat(node.fontSize ?? Float(defaultIconSize))
-    }
-
-    private func fontWeight(from name: String?) -> NSFont.Weight {
-        switch name {
-        case "ultralight": return .ultraLight
-        case "thin": return .thin
-        case "light": return .light
-        case "regular": return .regular
-        case "medium": return .medium
-        case "semibold": return .semibold
-        case "bold": return .bold
-        case "heavy": return .heavy
-        case "black": return .black
-        default: return .regular
-        }
     }
 }
 

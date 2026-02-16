@@ -113,6 +113,10 @@ struct AddCmd {
     #[argh(option)]
     font_family: Option<String>,
 
+    /// notch alignment: left or right (only effective on notched displays)
+    #[argh(option)]
+    notch_align: Option<String>,
+
     /// sort position
     #[argh(option)]
     position: Option<i32>,
@@ -197,6 +201,10 @@ struct SetCmd {
     /// font family (e.g. "SF Mono")
     #[argh(option)]
     font_family: Option<String>,
+
+    /// notch alignment: left or right (only effective on notched displays)
+    #[argh(option)]
+    notch_align: Option<String>,
 
     /// sort position
     #[argh(option)]
@@ -292,6 +300,7 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.font_size { obj["font_size"] = json!(v); }
             if let Some(v) = c.font_weight { obj["font_weight"] = json!(v); }
             if let Some(v) = c.font_family { obj["font_family"] = json!(v); }
+            if let Some(v) = c.notch_align { obj["notch_align"] = json!(v); }
             if let Some(v) = c.position { obj["position"] = json!(v); }
             if let Some(v) = c.display { obj["display"] = json!(v); }
             obj
@@ -315,6 +324,7 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.font_size { properties.insert("font_size".into(), v.to_string()); }
             if let Some(v) = c.font_weight { properties.insert("font_weight".into(), v); }
             if let Some(v) = c.font_family { properties.insert("font_family".into(), v); }
+            if let Some(v) = c.notch_align { properties.insert("notch_align".into(), v); }
             if let Some(v) = c.position { properties.insert("position".into(), v.to_string()); }
             if let Some(v) = c.display { properties.insert("display".into(), v.to_string()); }
             json!({

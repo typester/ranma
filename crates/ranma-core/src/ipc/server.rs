@@ -74,6 +74,7 @@ fn handle_command(input: &str) -> Response {
             font_size,
             font_weight,
             font_family,
+            notch_align,
             position,
             display,
         } => {
@@ -105,6 +106,7 @@ fn handle_command(input: &str) -> Response {
                     shadow_color,
                     shadow_radius,
                     height,
+                    notch_align,
                 },
             };
             let mut state = get_state().lock();

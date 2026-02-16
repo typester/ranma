@@ -3,7 +3,7 @@ import AppKit
 // @unchecked Sendable: required by UniFFI's StateChangeHandler (Send + Sync).
 // All mutable state is only accessed on the main thread via DispatchQueue.main.async.
 final class BarViewModel: StateChangeHandler, @unchecked Sendable {
-    private var windows: [UInt32: (BarWindow, BarContentView)] = [:]
+    private var windows: [UInt32: [BarWindow.Alignment: (BarWindow, BarContentView)]] = [:]
     private var nodes: [UInt32: [BarNode]] = [:]
 
     func onStateChange(event: StateChangeEvent) throws {
@@ -42,25 +42,95 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         let displayNodes = nodes[displayID] ?? []
 
         if displayNodes.isEmpty {
-            if let (window, _) = windows.removeValue(forKey: displayID) {
-                window.orderOut(nil)
-            }
+            removeAllWindows(for: displayID)
             return
         }
 
-        guard let (window, contentView) = ensureWindow(for: displayID) else {
+        let screen = NSScreen.screens.first { $0.displayID == displayID }
+        let hasNotch = screen?.auxiliaryTopLeftArea != nil
+
+        if hasNotch {
+            refreshWithNotch(displayID: displayID, displayNodes: displayNodes)
+        } else {
+            refreshCentered(displayID: displayID, displayNodes: displayNodes)
+        }
+    }
+
+    @MainActor
+    private func refreshCentered(displayID: UInt32, displayNodes: [BarNode]) {
+        // Remove any left/right windows from a previous notch state
+        for alignment in [BarWindow.Alignment.left, .right] {
+            if let (window, _) = windows[displayID]?.removeValue(forKey: alignment) {
+                window.orderOut(nil)
+            }
+        }
+
+        guard let (window, contentView) = ensureWindow(for: displayID, alignment: .center) else {
             return
         }
         contentView.updateNodes(displayNodes)
         let size = contentView.intrinsicContentSize
-        window.updateFrame(contentSize: size, animate: true)
+        window.updateFrame(contentSize: size, alignment: .center, animate: true)
+    }
+
+    @MainActor
+    private func refreshWithNotch(displayID: UInt32, displayNodes: [BarNode]) {
+        // Remove center window if it exists
+        if let (window, _) = windows[displayID]?.removeValue(forKey: .center) {
+            window.orderOut(nil)
+        }
+
+        let tree = resolveTree(displayNodes)
+
+        // Group tree entries by notch alignment
+        var grouped: [BarWindow.Alignment: [BarNode]] = [:]
+        for entry in tree {
+            let alignment = notchAlignmentForEntry(entry)
+            switch entry {
+            case .container(let node, let children):
+                grouped[alignment, default: []].append(node)
+                grouped[alignment, default: []].append(contentsOf: children)
+            case .item(let node):
+                grouped[alignment, default: []].append(node)
+            }
+        }
+
+        for alignment in [BarWindow.Alignment.left, .right] {
+            if let alignNodes = grouped[alignment], !alignNodes.isEmpty {
+                guard let (window, contentView) = ensureWindow(for: displayID, alignment: alignment) else {
+                    continue
+                }
+                contentView.updateNodes(alignNodes)
+                let size = contentView.intrinsicContentSize
+                window.updateFrame(contentSize: size, alignment: alignment, animate: true)
+            } else {
+                if let (window, _) = windows[displayID]?.removeValue(forKey: alignment) {
+                    window.orderOut(nil)
+                }
+            }
+        }
+
+        if windows[displayID]?.isEmpty == true {
+            windows.removeValue(forKey: displayID)
+        }
+    }
+
+    @MainActor
+    private func removeAllWindows(for displayID: UInt32) {
+        if let alignWindows = windows.removeValue(forKey: displayID) {
+            for (_, (window, _)) in alignWindows {
+                window.orderOut(nil)
+            }
+        }
     }
 
     @MainActor
     func handleDisplayChange(activeDisplayIDs: Set<UInt32>) {
-        for (displayID, (window, _)) in windows {
+        for (displayID, alignWindows) in windows {
             if !activeDisplayIDs.contains(displayID) {
-                window.orderOut(nil)
+                for (_, (window, _)) in alignWindows {
+                    window.orderOut(nil)
+                }
                 windows.removeValue(forKey: displayID)
             }
         }
@@ -73,8 +143,8 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     }
 
     @MainActor
-    private func ensureWindow(for displayID: UInt32) -> (BarWindow, BarContentView)? {
-        if let existing = windows[displayID] {
+    private func ensureWindow(for displayID: UInt32, alignment: BarWindow.Alignment) -> (BarWindow, BarContentView)? {
+        if let existing = windows[displayID]?[alignment] {
             return existing
         }
 
@@ -82,16 +152,16 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
             return nil
         }
 
-        return createWindow(for: screen, displayID: displayID)
+        return createWindow(for: screen, displayID: displayID, alignment: alignment)
     }
 
     @MainActor
-    private func createWindow(for screen: NSScreen, displayID: UInt32) -> (BarWindow, BarContentView) {
+    private func createWindow(for screen: NSScreen, displayID: UInt32, alignment: BarWindow.Alignment) -> (BarWindow, BarContentView) {
         let contentView = BarContentView()
         let window = BarWindow(screen: screen)
         window.contentView = contentView
         window.orderFrontRegardless()
-        windows[displayID] = (window, contentView)
+        windows[displayID, default: [:]][alignment] = (window, contentView)
         return (window, contentView)
     }
 }

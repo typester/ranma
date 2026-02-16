@@ -1,12 +1,12 @@
 import AppKit
 
 enum WindowSizer {
-    private static let defaultBarHeight: CGFloat = 28
+    private static let defaultBarHeight: CGFloat = 24
     private static let itemSpacing: CGFloat = 8
     private static let containerSpacing: CGFloat = 8
     private static let iconLabelGap: CGFloat = 4
-    private static let defaultFontSize: CGFloat = 12
-    private static let defaultIconSize: CGFloat = 14
+    private static let defaultFontSize: CGFloat = 13
+    private static let defaultIconSize: CGFloat = 16
 
     static func calculateWidth(for nodes: [BarNode]) -> CGFloat {
         let tree = resolveTree(nodes)
@@ -42,8 +42,11 @@ enum WindowSizer {
         var width: CGFloat = 0
         let font = fontForNode(node)
 
-        if node.icon != nil {
-            width += iconSizeForNode(node) + 2
+        if let iconName = node.icon,
+           let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil) {
+            let config = NSImage.SymbolConfiguration(pointSize: iconSizeForNode(node), weight: .medium)
+            let configured = image.withSymbolConfiguration(config) ?? image
+            width += configured.size.width
         }
 
         if let label = node.label {
@@ -80,7 +83,7 @@ enum WindowSizer {
         case "bold": return .bold
         case "heavy": return .heavy
         case "black": return .black
-        default: return .medium
+        default: return .regular
         }
     }
 }
@@ -88,6 +91,21 @@ enum WindowSizer {
 enum TreeEntry {
     case container(BarNode, [BarNode])
     case item(BarNode)
+}
+
+func notchAlignmentForEntry(_ entry: TreeEntry) -> BarWindow.Alignment {
+    let alignStr: String?
+    switch entry {
+    case .container(let node, _):
+        alignStr = node.style.notchAlign
+    case .item(let node):
+        alignStr = node.style.notchAlign
+    }
+    switch alignStr {
+    case "left": return .left
+    case "right": return .right
+    default: return .right
+    }
 }
 
 func resolveTree(_ nodes: [BarNode]) -> [TreeEntry] {

@@ -45,6 +45,8 @@ pub enum Command {
         #[serde(default)]
         font_family: Option<String>,
         #[serde(default)]
+        notch_align: Option<String>,
+        #[serde(default)]
         position: Option<i32>,
         #[serde(default)]
         display: Option<u32>,
@@ -94,6 +96,7 @@ pub struct NodeDto {
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
     pub height: Option<f32>,
+    pub notch_align: Option<String>,
     pub font_size: Option<f32>,
     pub font_weight: Option<String>,
     pub font_family: Option<String>,
@@ -123,6 +126,7 @@ impl From<BarNode> for NodeDto {
             shadow_color: node.style.shadow_color,
             shadow_radius: node.style.shadow_radius,
             height: node.style.height,
+            notch_align: node.style.notch_align,
             font_size: node.font_size,
             font_weight: node.font_weight,
             font_family: node.font_family,

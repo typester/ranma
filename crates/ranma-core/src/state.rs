@@ -17,6 +17,7 @@ pub struct NodeStyle {
     pub shadow_color: Option<String>,
     pub shadow_radius: Option<f32>,
     pub height: Option<f32>,
+    pub notch_align: Option<String>,
 }
 
 impl Default for NodeStyle {
@@ -31,6 +32,7 @@ impl Default for NodeStyle {
             shadow_color: None,
             shadow_radius: None,
             height: None,
+            notch_align: None,
         }
     }
 }
@@ -151,6 +153,7 @@ impl BarState {
                 "background_color" => node.style.background_color = optional_str(value),
                 "border_color" => node.style.border_color = optional_str(value),
                 "shadow_color" => node.style.shadow_color = optional_str(value),
+                "notch_align" => node.style.notch_align = optional_str(value),
                 "border_width" => {
                     node.style.border_width = Some(
                         value

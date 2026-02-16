@@ -1,12 +1,12 @@
 import AppKit
 
 class BarContentView: NSView {
-    private let defaultBarHeight: CGFloat = 28
+    private let defaultBarHeight: CGFloat = 24
     private let itemSpacing: CGFloat = 8
     private let containerSpacing: CGFloat = 8
     private let iconLabelGap: CGFloat = 4
-    private let defaultFontSize: CGFloat = 12
-    private let defaultIconSize: CGFloat = 14
+    private let defaultFontSize: CGFloat = 13
+    private let defaultIconSize: CGFloat = 16
 
     private var nodes: [BarNode] = []
 
@@ -156,8 +156,11 @@ class BarContentView: NSView {
         var width: CGFloat = 0
         let font = fontForNode(node)
 
-        if node.icon != nil {
-            width += iconSizeForNode(node) + 2
+        if let iconName = node.icon,
+           let image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil) {
+            let config = NSImage.SymbolConfiguration(pointSize: iconSizeForNode(node), weight: .medium)
+            let configured = image.withSymbolConfiguration(config) ?? image
+            width += configured.size.width
         }
 
         if let label = node.label {
@@ -194,7 +197,7 @@ class BarContentView: NSView {
         case "bold": return .bold
         case "heavy": return .heavy
         case "black": return .black
-        default: return .medium
+        default: return .regular
         }
     }
 }

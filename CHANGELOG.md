@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5](https://github.com/typester/ranma/compare/v0.1.4...v0.1.5) (2026-02-17)
+
+
+### Features
+
+* add `tree` subcommand to display node hierarchy ([#13](https://github.com/typester/ranma/issues/13)) ([aa5964e](https://github.com/typester/ranma/commit/aa5964e18baee764768e5a2c4901de05cfac4cbf))
+
+
+### Bug Fixes
+
+* add retry logic to detect-release step in release workflow ([#10](https://github.com/typester/ranma/issues/10)) ([b258ed1](https://github.com/typester/ranma/commit/b258ed1b7196e06b1d8ace4f51f5eee691161159))
+
 ## [0.1.4](https://github.com/typester/ranma/compare/v0.1.3...v0.1.4) (2026-02-17)
 
 

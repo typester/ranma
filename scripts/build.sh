@@ -70,6 +70,7 @@ cargo run -p uniffi-bindgen -- generate \
     --out-dir app/Sources/Generated/
 
 echo "==> Copying C headers for Swift systemLibrary target..."
+mkdir -p app/Sources/CRanmaCore/include
 cp app/Sources/Generated/ranma_coreFFI.h app/Sources/CRanmaCore/include/
 
 cat > app/Sources/CRanmaCore/module.modulemap <<'MODULEMAP'

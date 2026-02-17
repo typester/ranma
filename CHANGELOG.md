@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/typester/ranma/compare/v0.1.5...v0.1.6) (2026-02-17)
+
+
+### Features
+
+* add style variant examples for unified bar ([#14](https://github.com/typester/ranma/issues/14)) ([dd9a0bd](https://github.com/typester/ranma/commit/dd9a0bd4f8edf5bd211f9fd48f43a3b3f21bcf87))
+
+
+### Bug Fixes
+
+* resolve display migration architectural issues ([#16](https://github.com/typester/ranma/issues/16)) ([75efb30](https://github.com/typester/ranma/commit/75efb30c024c7474d7fd095723dce5b8dbe850bd))
+
 ## [0.1.5](https://github.com/typester/ranma/compare/v0.1.4...v0.1.5) (2026-02-17)
 
 

@@ -1,5 +1,14 @@
 import AppKit
 
+@_silgen_name("SLSMainConnectionID")
+private func SLSMainConnectionID() -> Int32
+
+@_silgen_name("SLSManagedDisplayGetCurrentSpace")
+private func SLSManagedDisplayGetCurrentSpace(_ cid: Int32, _ displayUUID: CFString) -> UInt64
+
+@_silgen_name("SLSSpaceGetType")
+private func SLSSpaceGetType(_ cid: Int32, _ spaceID: UInt64) -> Int32
+
 // @unchecked Sendable: required by UniFFI's StateChangeHandler (Send + Sync).
 // All mutable state is only accessed on the main thread via DispatchQueue.main.async.
 final class BarViewModel: StateChangeHandler, @unchecked Sendable {
@@ -7,6 +16,7 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     private var nodes: [UInt32: [BarNode]] = [:]
     private var pendingDisplays: Set<UInt32> = []
     private var refreshTimer: Timer?
+    private var fullscreenDisplays: Set<UInt32> = []
 
     func onStateChange(event: StateChangeEvent) throws {
         DispatchQueue.main.async { [self] in
@@ -172,8 +182,53 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         let contentView = BarContentView()
         let window = BarWindow(screen: screen)
         window.contentView = contentView
-        window.orderFrontRegardless()
+        if !fullscreenDisplays.contains(displayID) {
+            window.orderFrontRegardless()
+        }
         windows[displayID, default: [:]][alignment] = (window, contentView)
         return (window, contentView)
+    }
+
+    static func detectFullscreenDisplays() -> Set<UInt32> {
+        var result: Set<UInt32> = []
+        let cid = SLSMainConnectionID()
+
+        for screen in NSScreen.screens {
+            let displayID = screen.displayID
+            let uuid = CGDisplayCreateUUIDFromDisplayID(displayID).takeRetainedValue()
+            let uuidString = CFUUIDCreateString(nil, uuid) as CFString
+
+            let spaceID = SLSManagedDisplayGetCurrentSpace(cid, uuidString)
+            if spaceID != 0 && SLSSpaceGetType(cid, spaceID) == 4 {
+                result.insert(displayID)
+            }
+        }
+
+        return result
+    }
+
+    @MainActor
+    func updateFullscreenState() {
+        let current = Self.detectFullscreenDisplays()
+        let previous = fullscreenDisplays
+        fullscreenDisplays = current
+
+        // Hide windows on displays that became fullscreen
+        for displayID in current.subtracting(previous) {
+            if let alignWindows = windows[displayID] {
+                for (_, (window, _)) in alignWindows {
+                    window.orderOut(nil)
+                }
+            }
+        }
+
+        // Show windows on displays that left fullscreen
+        for displayID in previous.subtracting(current) {
+            if let alignWindows = windows[displayID] {
+                for (_, (window, _)) in alignWindows {
+                    window.orderFrontRegardless()
+                }
+            }
+        }
     }
 }

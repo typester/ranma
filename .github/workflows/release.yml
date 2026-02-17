@@ -86,8 +86,7 @@ jobs:
 
           ARCHIVE="ranma-${ARCH}-${VERSION}.tar.gz"
           tar czf "${ARCHIVE}" \
-            -C target/${{ matrix.target }}/release ranma \
-            -C ../../app/.build/release ranma-server
+            -C target/${{ matrix.target }}/release ranma ranma-server
           echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
 
       - name: Upload release asset

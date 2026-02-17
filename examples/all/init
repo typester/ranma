@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+# Launch all example plugins at once.
+
+SCRIPT_DIR="${0:A:h}"
+
+source "$SCRIPT_DIR/../clock/init"
+source "$SCRIPT_DIR/../battery/init"
+source "$SCRIPT_DIR/../now-playing/init"
+source "$SCRIPT_DIR/../cpu-mem/init"
+source "$SCRIPT_DIR/../wifi/init"
+source "$SCRIPT_DIR/../mic-camera/init"

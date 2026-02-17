@@ -1,0 +1,15 @@
+#!/bin/zsh
+
+# Unified status bar plugin for ranma.
+#
+# Single bar combining clock, CPU/memory, battery, Wi-Fi,
+# now playing, and mic/camera indicators.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - swift (Xcode or CLT)
+#   - reap (brew install typester/reap/reap)
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/unified.py" &

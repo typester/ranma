@@ -1,0 +1,14 @@
+#!/bin/zsh
+
+# Mic & Camera privacy indicator for ranma.
+#
+# Shows an indicator when microphone or camera is in use.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - swift (Xcode or CLT)
+#   - reap (brew install typester/reap/reap)
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/mic_camera.py" &

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/typester/ranma/compare/v0.1.3...v0.1.4) (2026-02-17)
+
+
+### Features
+
+* hide bar on fullscreen spaces ([#9](https://github.com/typester/ranma/issues/9)) ([ecaf2b2](https://github.com/typester/ranma/commit/ecaf2b2fb06102ee091006658670df609e47bc65))
+
+
+### Bug Fixes
+
+* prevent bar from appearing at wrong position on display changes ([#7](https://github.com/typester/ranma/issues/7)) ([8508b81](https://github.com/typester/ranma/commit/8508b817a5eb7444fffa4e5a48e7104271643bb9))
+
 ## [0.1.3](https://github.com/typester/ranma/compare/v0.1.2...v0.1.3) (2026-02-17)
 
 

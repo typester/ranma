@@ -21,7 +21,7 @@
 
 ## Project Architecture
 
-- **ranma** is a programmable macOS status bar replacement (inspired by SketchyBar).
+- **ranma** is a programmable macOS status bar overlay (inspired by SketchyBar).
 - Key innovation: dynamically-sized floating window covering only content, solving the click-through problem.
 - Architecture: Client-Server via Unix Domain Socket IPC.
 

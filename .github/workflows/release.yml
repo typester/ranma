@@ -34,19 +34,26 @@ jobs:
             exit 0
           fi
 
-          TEN_MIN_AGO=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-10M '+%Y-%m-%dT%H:%M:%SZ')
-
-          RELEASE=$(gh api repos/${{ github.repository }}/releases \
-            --jq ".[] | select(.tag_name | startswith(\"v\")) | select(.created_at >= \"${TEN_MIN_AGO}\") | .tag_name" \
-            | head -1)
+          RELEASE=""
+          for i in $(seq 1 6); do
+            TEN_MIN_AGO=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -v-10M '+%Y-%m-%dT%H:%M:%SZ')
+            RELEASE=$(gh api repos/${{ github.repository }}/releases \
+              --jq ".[] | select(.tag_name | startswith(\"v\")) | select(.created_at >= \"${TEN_MIN_AGO}\") | .tag_name" \
+              | head -1)
+            if [ -n "$RELEASE" ]; then
+              echo "Found release: ${RELEASE} (attempt ${i})"
+              break
+            fi
+            echo "No release found (attempt ${i}/6), retrying in 10s..."
+            sleep 10
+          done
 
           if [ -n "$RELEASE" ]; then
             echo "tag=${RELEASE}" >> "$GITHUB_OUTPUT"
             echo "should_build=true" >> "$GITHUB_OUTPUT"
-            echo "Found recent release: ${RELEASE}"
           else
             echo "should_build=false" >> "$GITHUB_OUTPUT"
-            echo "No recent release found"
+            echo "No recent release found after 6 attempts"
           fi
 
   build:

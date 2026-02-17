@@ -773,14 +773,14 @@ fn run_tree(cmd: TreeCmd) {
         let mut roots: Vec<&Value> = Vec::new();
 
         for node in display_nodes {
-            if let Some(parent) = node["parent"].as_str() {
-                if !parent.is_empty() {
-                    children_map
-                        .entry(parent.to_string())
-                        .or_default()
-                        .push(node);
-                    continue;
-                }
+            if let Some(parent) = node["parent"].as_str()
+                && !parent.is_empty()
+            {
+                children_map
+                    .entry(parent.to_string())
+                    .or_default()
+                    .push(node);
+                continue;
             }
             roots.push(node);
         }
@@ -809,15 +809,15 @@ fn format_node_line(node: &Value) -> String {
 
     let mut line = format!("{name} ({node_type})");
 
-    if let Some(icon) = node["icon"].as_str() {
-        if !icon.is_empty() {
-            line.push_str(&format!(" icon:{icon}"));
-        }
+    if let Some(icon) = node["icon"].as_str()
+        && !icon.is_empty()
+    {
+        line.push_str(&format!(" icon:{icon}"));
     }
-    if let Some(label) = node["label"].as_str() {
-        if !label.is_empty() {
-            line.push_str(&format!(" \"{label}\""));
-        }
+    if let Some(label) = node["label"].as_str()
+        && !label.is_empty()
+    {
+        line.push_str(&format!(" \"{label}\""));
     }
 
     line

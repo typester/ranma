@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+# Transparent status bar plugin for ranma.
+#
+# Transparent background that blends with the macOS menu bar.
+# Designed for macOS Tahoe's transparent menu bar style.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - swift (Xcode or CLT)
+#   - reap (brew install typester/reap/reap)
+
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="/opt/homebrew/bin:$PATH"
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/unified-transparent.py" &

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/typester/ranma/compare/v0.1.2...v0.1.3) (2026-02-17)
+
+
+### Bug Fixes
+
+* use correct path for ranma-server in release packaging ([#3](https://github.com/typester/ranma/issues/3)) ([e352d58](https://github.com/typester/ranma/commit/e352d5886cecee302692d64a6c62e737b61e7f4f))
+
 ## [0.1.2](https://github.com/typester/ranma/compare/v0.1.1...v0.1.2) (2026-02-17)
 
 

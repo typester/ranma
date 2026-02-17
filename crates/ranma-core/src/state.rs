@@ -95,7 +95,10 @@ impl BarState {
             match parent {
                 Some(p) => {
                     if matches!(p.node_type, NodeType::Item) {
-                        return Err(format!("'{}' is an item and cannot have children", parent_name));
+                        return Err(format!(
+                            "'{}' is an item and cannot have children",
+                            parent_name
+                        ));
                     }
                 }
                 None => return Err(format!("parent '{}' not found", parent_name)),
@@ -167,11 +170,17 @@ impl BarState {
         properties: &HashMap<String, String>,
     ) -> Result<(), String> {
         fn optional_str(value: &str) -> Option<String> {
-            if value.is_empty() { None } else { Some(value.to_string()) }
+            if value.is_empty() {
+                None
+            } else {
+                Some(value.to_string())
+            }
         }
 
         fn parse_f32(key: &str, value: &str) -> Result<f32, String> {
-            value.parse().map_err(|_| format!("invalid {}: {}", key, value))
+            value
+                .parse()
+                .map_err(|_| format!("invalid {}: {}", key, value))
         }
 
         // Pass 1: apply shorthands (all → directional) so specifics can override
@@ -290,8 +299,8 @@ impl BarState {
                 }
                 "display" => {}
                 // Shorthands handled in pass 1
-                "padding" | "padding_horizontal" | "padding_vertical"
-                | "margin" | "margin_horizontal" | "margin_vertical" => {}
+                "padding" | "padding_horizontal" | "padding_vertical" | "margin"
+                | "margin_horizontal" | "margin_vertical" => {}
                 _ => return Err(format!("unknown property: {}", key)),
             }
         }

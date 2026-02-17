@@ -49,7 +49,7 @@ fn handle_command(input: &str) -> Response {
         Err(e) => {
             return Response::Error {
                 message: format!("invalid command: {e}"),
-            }
+            };
         }
     };
 

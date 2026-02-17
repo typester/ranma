@@ -9,11 +9,27 @@ pub struct DisplayInfo {
 
 #[derive(Debug, uniffi::Enum)]
 pub enum StateChangeEvent {
-    NodeAdded { display: u32, node: BarNode },
-    NodeRemoved { display: u32, name: String },
-    NodeUpdated { display: u32, node: BarNode },
-    NodeMoved { old_display: u32, new_display: u32, node: BarNode },
-    FullRefresh { display: u32, nodes: Vec<BarNode> },
+    NodeAdded {
+        display: u32,
+        node: BarNode,
+    },
+    NodeRemoved {
+        display: u32,
+        name: String,
+    },
+    NodeUpdated {
+        display: u32,
+        node: BarNode,
+    },
+    NodeMoved {
+        old_display: u32,
+        new_display: u32,
+        node: BarNode,
+    },
+    FullRefresh {
+        display: u32,
+        nodes: Vec<BarNode>,
+    },
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]

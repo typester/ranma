@@ -18,6 +18,7 @@
 
 - Keep code comments minimal. Only add comments where the logic is genuinely unclear.
 - NEVER add comments that merely restate what the immediately following code does.
+- **ALWAYS run `cargo fmt` after modifying any Rust files.** CI checks formatting via `cargo fmt --all --check`.
 
 ## Project Architecture
 

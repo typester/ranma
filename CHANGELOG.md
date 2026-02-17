@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/typester/ranma/compare/v0.1.1...v0.1.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* create CRanmaCore/include directory before copying headers in build script ([85a1841](https://github.com/typester/ranma/commit/85a18418fa73854520ca0aea0bf78d1369f203c2))
+
 ## [0.1.1](https://github.com/typester/ranma/compare/v0.1.0...v0.1.1) (2026-02-17)
 
 

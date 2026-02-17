@@ -14,6 +14,9 @@
 # Usage:
 #   ranma start --init ./examples/yashiki-workspace/init
 
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="/opt/homebrew/bin:$PATH"
+
 SCRIPT_DIR="${0:A:h}"
 
 # All container/item creation is handled by the bridge based on

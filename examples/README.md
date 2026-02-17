@@ -3,7 +3,13 @@
 Example widgets demonstrating ranma's capabilities. Each example can be used as an init script:
 
 ```sh
-PATH=./target/debug:$PATH ./target/debug/ranma-server start --init ./examples/<name>/init
+ranma-server start --init ./examples/<name>/init
+```
+
+You can also run an init script directly while ranma-server is already running, to add widgets to the existing session:
+
+```sh
+./examples/<name>/init
 ```
 
 All examples require [reap](https://github.com/typester/reap) (`brew install typester/reap/reap`) for process lifecycle management.

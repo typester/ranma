@@ -82,12 +82,12 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
             }
         }
 
-        guard let (window, contentView) = ensureWindow(for: displayID, alignment: .center) else {
+        guard let (window, contentView, isNew) = ensureWindow(for: displayID, alignment: .center) else {
             return
         }
         contentView.updateNodes(displayNodes)
         let size = contentView.intrinsicContentSize
-        window.updateFrame(contentSize: size, alignment: .center, animate: true)
+        window.updateFrame(contentSize: size, alignment: .center, animate: !isNew)
     }
 
     @MainActor
@@ -108,12 +108,12 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
 
         for alignment in [BarWindow.Alignment.left, .right] {
             if let alignNodes = grouped[alignment], !alignNodes.isEmpty {
-                guard let (window, contentView) = ensureWindow(for: displayID, alignment: alignment) else {
+                guard let (window, contentView, isNew) = ensureWindow(for: displayID, alignment: alignment) else {
                     continue
                 }
                 contentView.updateNodes(alignNodes)
                 let size = contentView.intrinsicContentSize
-                window.updateFrame(contentSize: size, alignment: alignment, animate: true)
+                window.updateFrame(contentSize: size, alignment: alignment, animate: !isNew)
             } else {
                 if let (window, _) = windows[displayID]?.removeValue(forKey: alignment) {
                     window.orderOut(nil)
@@ -147,23 +147,24 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         }
 
         for displayID in activeDisplayIDs {
-            if windows[displayID] == nil, let displayNodes = nodes[displayID], !displayNodes.isEmpty {
+            if let displayNodes = nodes[displayID], !displayNodes.isEmpty {
                 refreshDisplay(displayID)
             }
         }
     }
 
     @MainActor
-    private func ensureWindow(for displayID: UInt32, alignment: BarWindow.Alignment) -> (BarWindow, BarContentView)? {
+    private func ensureWindow(for displayID: UInt32, alignment: BarWindow.Alignment) -> (BarWindow, BarContentView, Bool)? {
         if let existing = windows[displayID]?[alignment] {
-            return existing
+            return (existing.0, existing.1, false)
         }
 
         guard let screen = NSScreen.screens.first(where: { $0.displayID == displayID }) else {
             return nil
         }
 
-        return createWindow(for: screen, displayID: displayID, alignment: alignment)
+        let (window, contentView) = createWindow(for: screen, displayID: displayID, alignment: alignment)
+        return (window, contentView, true)
     }
 
     @MainActor

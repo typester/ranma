@@ -3,6 +3,10 @@ import AppKit
 class BarWindow: NSWindow {
     let displayID: CGDirectDisplayID
 
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        return frameRect
+    }
+
     init(screen: NSScreen) {
         self.displayID = screen.displayID
         super.init(
@@ -31,7 +35,7 @@ class BarWindow: NSWindow {
         case .center:
             x = screenFrame.midX - contentSize.width / 2
             let visibleFrame = screen.visibleFrame
-            let menuBarHeight = screenFrame.maxY - visibleFrame.maxY
+            let menuBarHeight = max(screenFrame.maxY - visibleFrame.maxY, contentSize.height)
             y = screenFrame.maxY - menuBarHeight + floor((menuBarHeight - contentSize.height) / 2)
         case .left:
             if let area = screen.auxiliaryTopLeftArea {
@@ -40,7 +44,7 @@ class BarWindow: NSWindow {
                 x = screenFrame.midX - contentSize.width / 2
             }
             let visibleFrameL = screen.visibleFrame
-            let menuBarHeightL = screenFrame.maxY - visibleFrameL.maxY
+            let menuBarHeightL = max(screenFrame.maxY - visibleFrameL.maxY, contentSize.height)
             y = screenFrame.maxY - menuBarHeightL + (menuBarHeightL - contentSize.height) / 2
         case .right:
             if let area = screen.auxiliaryTopRightArea {
@@ -49,7 +53,7 @@ class BarWindow: NSWindow {
                 x = screenFrame.midX - contentSize.width / 2
             }
             let visibleFrameR = screen.visibleFrame
-            let menuBarHeightR = screenFrame.maxY - visibleFrameR.maxY
+            let menuBarHeightR = max(screenFrame.maxY - visibleFrameR.maxY, contentSize.height)
             y = screenFrame.maxY - menuBarHeightR + (menuBarHeightR - contentSize.height) / 2
         }
         let newFrame = NSRect(

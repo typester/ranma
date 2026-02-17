@@ -8,11 +8,19 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
         registerHandler(handler: viewModel)
 
         updateDisplayList()
+        viewModel.updateFullscreenState()
 
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(screenParametersChanged),
             name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(activeSpaceDidChange),
+            name: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil
         )
 
@@ -30,6 +38,11 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
         updateDisplayList()
         let activeIDs = Set(NSScreen.screens.map { $0.displayID })
         viewModel.handleDisplayChange(activeDisplayIDs: activeIDs)
+        viewModel.updateFullscreenState()
+    }
+
+    @MainActor @objc private func activeSpaceDidChange(_ notification: Notification) {
+        viewModel.updateFullscreenState()
     }
 
     private func updateDisplayList() {

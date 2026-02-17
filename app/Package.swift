@@ -16,6 +16,8 @@ let package = Package(
             exclude: ["CRanmaCore"],
             linkerSettings: [
                 .linkedLibrary("ranma_core"),
+                .unsafeFlags(["-F", "/System/Library/PrivateFrameworks"]),
+                .linkedFramework("SkyLight"),
             ]
         ),
     ]

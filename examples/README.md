@@ -36,6 +36,52 @@ Dynamic Island style variant of the unified bar. Attaches to the top edge of the
 
 ---
 
+## Unified Style Variants
+
+The following are style variants of the unified bar. Same functionality, different visual themes.
+
+### Unified Light
+
+![unified-light](../assets/statusbar-unified-light.png)
+
+Light minimal theme with white/gray background and dark text. Clean, modern design inspired by native macOS aesthetics. Features thin borders and subtle shadows.
+
+**Prerequisites:** Python 3, Swift (Xcode CLT)
+
+### Unified Neon
+
+![unified-neon](../assets/statusbar-unified-neon.png)
+
+Cyberpunk-inspired theme with a deep dark background, cyan/magenta neon accents, and glowing borders. Sharp corners with vibrant neon color scheme.
+
+**Prerequisites:** Python 3, Swift (Xcode CLT)
+
+### Unified Retro
+
+![unified-retro](../assets/statusbar-unified-retro.png)
+
+Retro terminal/hacker theme with black background, phosphor green monospace text (Menlo), and sharp corners. No shadows. Labels display in uppercase for an authentic CRT feel.
+
+**Prerequisites:** Python 3, Swift (Xcode CLT)
+
+### Unified Pastel
+
+![unified-pastel](../assets/statusbar-unified-pastel.png)
+
+Soft dark theme inspired by the [Catppuccin Mocha](https://github.com/catppuccin/catppuccin) color palette. Deep purple background with pastel accent colors (green, peach, mauve). Pill-shaped with large corner radius and dot separators.
+
+**Prerequisites:** Python 3, Swift (Xcode CLT)
+
+### Unified Transparent
+
+![unified-transparent](../assets/statusbar-unified-transparent.png)
+
+Fully transparent theme that blends seamlessly with the macOS menu bar. No background, no borders, no custom font or colors — uses system defaults for everything. Only status indicators (CPU load, battery, etc.) use explicit colors. Designed for macOS Tahoe's transparent menu bar.
+
+**Prerequisites:** Python 3, Swift (Xcode CLT)
+
+---
+
 ## All
 
 ![all](../assets/statusbar-all.png)

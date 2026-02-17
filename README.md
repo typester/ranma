@@ -6,6 +6,11 @@ ranma places dynamically-sized floating windows on the menu bar that cover only 
 
 ![yashiki-workspace](assets/statusbar-yashiki-workspace.png)
 ![unified](assets/statusbar-unified.png)
+![unified-light](assets/statusbar-unified-light.png)
+![unified-neon](assets/statusbar-unified-neon.png)
+![unified-retro](assets/statusbar-unified-retro.png)
+![unified-pastel](assets/statusbar-unified-pastel.png)
+![unified-transparent](assets/statusbar-unified-transparent.png)
 ![island](assets/statusbar-island.png)
 ![all](assets/statusbar-all.png)
 

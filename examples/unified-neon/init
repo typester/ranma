@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+# Neon/Cyberpunk status bar plugin for ranma.
+#
+# Dark background with vibrant neon borders and glow effects.
+# Cyan and magenta color scheme with a cyberpunk aesthetic.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - swift (Xcode or CLT)
+#   - reap (brew install typester/reap/reap)
+
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="/opt/homebrew/bin:$PATH"
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/unified-neon.py" &

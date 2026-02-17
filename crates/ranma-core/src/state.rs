@@ -8,7 +8,7 @@ pub enum NodeType {
     Box,
 }
 
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone, Default, uniffi::Record)]
 pub struct NodeStyle {
     pub background_color: Option<String>,
     pub border_color: Option<String>,
@@ -33,36 +33,6 @@ pub struct NodeStyle {
     pub hover_background_color: Option<String>,
     pub hover_label_color: Option<String>,
     pub hover_icon_color: Option<String>,
-}
-
-impl Default for NodeStyle {
-    fn default() -> Self {
-        Self {
-            background_color: None,
-            border_color: None,
-            border_width: None,
-            corner_radius: None,
-            padding_left: None,
-            padding_right: None,
-            padding_top: None,
-            padding_bottom: None,
-            shadow_color: None,
-            shadow_radius: None,
-            width: None,
-            height: None,
-            gap: None,
-            margin_left: None,
-            margin_right: None,
-            margin_top: None,
-            margin_bottom: None,
-            notch_align: None,
-            align_items: None,
-            justify_content: None,
-            hover_background_color: None,
-            hover_label_color: None,
-            hover_icon_color: None,
-        }
-    }
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -145,16 +115,16 @@ impl BarState {
 
         let (current_display, idx) = self.find_node(name)?;
 
-        if let Some(target_display) = new_display {
-            if target_display != current_display {
-                let mut node = self.nodes.get_mut(&current_display).unwrap().remove(idx);
-                node.display = target_display;
-                Self::apply_properties(&mut node, properties)?;
-                let display_nodes = self.nodes.entry(target_display).or_default();
-                display_nodes.push(node.clone());
-                display_nodes.sort_by_key(|n| n.position);
-                return Ok(node);
-            }
+        if let Some(target_display) = new_display
+            && target_display != current_display
+        {
+            let mut node = self.nodes.get_mut(&current_display).unwrap().remove(idx);
+            node.display = target_display;
+            Self::apply_properties(&mut node, properties)?;
+            let display_nodes = self.nodes.entry(target_display).or_default();
+            display_nodes.push(node.clone());
+            display_nodes.sort_by_key(|n| n.position);
+            return Ok(node);
         }
 
         let nodes = self.nodes.get_mut(&current_display).unwrap();

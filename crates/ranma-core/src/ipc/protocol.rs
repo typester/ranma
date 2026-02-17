@@ -5,6 +5,7 @@ use crate::state::BarNode;
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)]
 pub enum Command {
     Add {
         name: String,

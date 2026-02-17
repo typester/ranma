@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 ## Language
 
@@ -11,6 +11,7 @@
 
 ## Workflow
 
+- **ALWAYS re-read CLAUDE.md before starting any task.** This ensures you follow the latest project rules and conventions.
 - **ALWAYS plan before coding.** Unless explicitly instructed otherwise, use plan mode to propose changes and get user approval before editing any files.
 - Do NOT start writing or editing code without a plan approved by the user.
 
@@ -19,6 +20,7 @@
 - Keep code comments minimal. Only add comments where the logic is genuinely unclear.
 - NEVER add comments that merely restate what the immediately following code does.
 - **ALWAYS run `cargo fmt` after modifying any Rust files.** CI checks formatting via `cargo fmt --all --check`.
+- **ALWAYS run `cargo clippy` before considering any task complete.** Fix all warnings before finishing.
 
 ## Project Architecture
 
@@ -76,4 +78,4 @@
 
 ## Memory
 
-- Any information that should persist across sessions MUST be recorded by updating this AGENTS.md file.
+- Any information that should persist across sessions MUST be recorded by updating this CLAUDE.md file.

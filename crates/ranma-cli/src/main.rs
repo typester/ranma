@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::UnixStream;
 use std::os::unix::process::CommandExt;
@@ -22,6 +22,7 @@ enum Command {
     Remove(RemoveCmd),
     Query(QueryCmd),
     Displays(DisplaysCmd),
+    Tree(TreeCmd),
 }
 
 /// start the ranma server
@@ -406,11 +407,25 @@ struct QueryCmd {
 #[argh(subcommand, name = "displays")]
 struct DisplaysCmd {}
 
+/// display node tree
+#[derive(FromArgs)]
+#[argh(subcommand, name = "tree")]
+struct TreeCmd {
+    /// filter by display ID
+    #[argh(option)]
+    display: Option<u32>,
+}
+
 fn main() {
     let args: Args = argh::from_env();
 
     if let Command::Start(cmd) = args.command {
         exec_server(cmd);
+        return;
+    }
+
+    if let Command::Tree(cmd) = args.command {
+        run_tree(cmd);
         return;
     }
 
@@ -706,6 +721,136 @@ fn build_command(cmd: Command) -> Value {
         Command::Remove(c) => json!({ "command": "remove", "name": c.name }),
         Command::Query(c) => json!({ "command": "query", "name": c.name, "display": c.display }),
         Command::Displays(_) => json!({ "command": "displays" }),
+        Command::Tree(_) => unreachable!(),
+    }
+}
+
+fn run_tree(cmd: TreeCmd) {
+    let query = json!({ "command": "query", "name": null, "display": cmd.display });
+    let socket_path = default_socket_path();
+    let response = match send_command(&socket_path, &query) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let data: Value = match serde_json::from_str(&response) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("error: failed to parse response: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let nodes = match data["nodes"].as_array() {
+        Some(arr) => arr,
+        None => {
+            eprintln!("error: unexpected response format");
+            std::process::exit(1);
+        }
+    };
+
+    // Group nodes by display
+    let mut by_display: BTreeMap<u64, Vec<&Value>> = BTreeMap::new();
+    for node in nodes {
+        let display_id = node["display"].as_u64().unwrap_or(0);
+        by_display.entry(display_id).or_default().push(node);
+    }
+
+    let mut first = true;
+    for (display_id, display_nodes) in &by_display {
+        if !first {
+            println!();
+        }
+        first = false;
+
+        println!("[display {display_id}]");
+
+        // Build parent->children map
+        let mut children_map: HashMap<String, Vec<&Value>> = HashMap::new();
+        let mut roots: Vec<&Value> = Vec::new();
+
+        for node in display_nodes {
+            if let Some(parent) = node["parent"].as_str()
+                && !parent.is_empty()
+            {
+                children_map
+                    .entry(parent.to_string())
+                    .or_default()
+                    .push(node);
+                continue;
+            }
+            roots.push(node);
+        }
+
+        // Sort by position
+        let sort_by_position = |a: &&Value, b: &&Value| {
+            let pa = a["position"].as_i64().unwrap_or(0);
+            let pb = b["position"].as_i64().unwrap_or(0);
+            pa.cmp(&pb)
+        };
+
+        roots.sort_by(sort_by_position);
+        for children in children_map.values_mut() {
+            children.sort_by(sort_by_position);
+        }
+
+        for root in &roots {
+            print_tree_node(root, &children_map, "", true);
+        }
+    }
+}
+
+fn format_node_line(node: &Value) -> String {
+    let name = node["name"].as_str().unwrap_or("?");
+    let node_type = node["node_type"].as_str().unwrap_or("item");
+
+    let mut line = format!("{name} ({node_type})");
+
+    if let Some(icon) = node["icon"].as_str()
+        && !icon.is_empty()
+    {
+        line.push_str(&format!(" icon:{icon}"));
+    }
+    if let Some(label) = node["label"].as_str()
+        && !label.is_empty()
+    {
+        line.push_str(&format!(" \"{label}\""));
+    }
+
+    line
+}
+
+fn print_tree_node(
+    node: &Value,
+    children_map: &HashMap<String, Vec<&Value>>,
+    prefix: &str,
+    is_root: bool,
+) {
+    let line = format_node_line(node);
+
+    if is_root {
+        println!("{line}");
+    }
+
+    let name = node["name"].as_str().unwrap_or("");
+    if let Some(children) = children_map.get(name) {
+        let count = children.len();
+        for (i, child) in children.iter().enumerate() {
+            let is_last = i == count - 1;
+            let connector = if is_last { "└── " } else { "├── " };
+            let child_line = format_node_line(child);
+            println!("{prefix}{connector}{child_line}");
+
+            let child_prefix = if is_last {
+                format!("{prefix}    ")
+            } else {
+                format!("{prefix}│   ")
+            };
+            print_tree_node(child, children_map, &child_prefix, false);
+        }
     }
 }
 

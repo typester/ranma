@@ -11,6 +11,7 @@
 
 ## Workflow
 
+- **ALWAYS re-read AGENTS.md before starting any task.** This ensures you follow the latest project rules and conventions.
 - **ALWAYS plan before coding.** Unless explicitly instructed otherwise, use plan mode to propose changes and get user approval before editing any files.
 - Do NOT start writing or editing code without a plan approved by the user.
 

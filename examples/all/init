@@ -2,6 +2,9 @@
 
 # Launch all example plugins at once.
 
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="/opt/homebrew/bin:$PATH"
+
 SCRIPT_DIR="${0:A:h}"
 
 source "$SCRIPT_DIR/../clock/init"

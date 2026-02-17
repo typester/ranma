@@ -26,7 +26,17 @@ ranma places dynamically-sized floating windows on the menu bar that cover only 
 
 Client-server model: `ranma-server` manages windows, `ranma` CLI sends JSON commands over a Unix Domain Socket.
 
-## Building
+## Installation
+
+### Homebrew
+
+```sh
+brew install typester/ranma/ranma
+```
+
+This installs both `ranma-server` and `ranma` CLI.
+
+### Building from Source
 
 Prerequisites: Rust toolchain, Xcode Command Line Tools
 
@@ -44,7 +54,7 @@ This produces two binaries:
 Start the server with an init script:
 
 ```sh
-PATH=./target/debug:$PATH ./target/debug/ranma-server start --init ./examples/unified/init
+ranma-server start --init ./examples/unified/init
 ```
 
 The init script launches widget processes that use the `ranma` CLI to add and update status bar items.

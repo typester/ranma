@@ -98,6 +98,7 @@ fn handle_command(input: &str) -> Response {
             position,
             display,
         } => {
+            let display_explicit = display.is_some();
             let display = display.unwrap_or_else(|| {
                 if let Some(ref parent_name) = parent {
                     let state = get_state().lock();
@@ -131,6 +132,7 @@ fn handle_command(input: &str) -> Response {
                 on_click,
                 position: position.unwrap_or(0),
                 display,
+                display_explicit,
                 style: NodeStyle {
                     background_color,
                     border_color,

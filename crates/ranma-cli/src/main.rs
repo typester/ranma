@@ -375,9 +375,9 @@ struct SetCmd {
     #[argh(option)]
     position: Option<i32>,
 
-    /// move to display ID
+    /// move to display ID (empty string to reset)
     #[argh(option)]
-    display: Option<u32>,
+    display: Option<String>,
 }
 
 /// remove a node
@@ -710,7 +710,7 @@ fn build_command(cmd: Command) -> Value {
                 properties.insert("position".into(), v.to_string());
             }
             if let Some(v) = c.display {
-                properties.insert("display".into(), v.to_string());
+                properties.insert("display".into(), v);
             }
             json!({
                 "command": "set",

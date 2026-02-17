@@ -50,7 +50,46 @@ pub fn start_server(socket_path: String) {
 
 #[uniffi::export]
 pub fn set_displays(displays: Vec<DisplayInfo>) {
-    *get_displays_store().lock() = displays;
+    let old_displays = {
+        let mut store = get_displays_store().lock();
+        let old = store.clone();
+        *store = displays.clone();
+        old
+    };
+
+    let new_ids: std::collections::HashSet<u32> = displays.iter().map(|d| d.id).collect();
+    let removed: Vec<u32> = old_displays
+        .iter()
+        .map(|d| d.id)
+        .filter(|id| !new_ids.contains(id))
+        .collect();
+
+    if removed.is_empty() {
+        return;
+    }
+
+    let new_main = main_display_id();
+    if new_main == 0 {
+        return;
+    }
+
+    let mut events = Vec::new();
+    {
+        let mut state = get_state().lock();
+        for &old_display in &removed {
+            for node in state.migrate_nodes(old_display, new_main) {
+                events.push(StateChangeEvent::NodeMoved {
+                    old_display,
+                    new_display: new_main,
+                    node,
+                });
+            }
+        }
+    }
+
+    for event in events {
+        notify(event);
+    }
 }
 
 #[uniffi::export]

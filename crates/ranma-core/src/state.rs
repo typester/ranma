@@ -42,6 +42,7 @@ pub struct BarNode {
     pub parent: Option<String>,
     pub position: i32,
     pub display: u32,
+    pub display_explicit: bool,
     pub style: NodeStyle,
     pub label: Option<String>,
     pub label_color: Option<String>,
@@ -105,34 +106,55 @@ impl BarState {
         name: &str,
         properties: &HashMap<String, String>,
     ) -> Result<BarNode, String> {
-        let new_display = properties
+        // None = not specified, Some(None) = reset (empty string), Some(Some(id)) = explicit
+        let display_change: Option<Option<u32>> = properties
             .get("display")
             .map(|v| {
-                v.parse::<u32>()
-                    .map_err(|_| format!("invalid display: {}", v))
+                if v.is_empty() {
+                    Ok(None)
+                } else {
+                    v.parse::<u32>()
+                        .map(Some)
+                        .map_err(|_| format!("invalid display: {}", v))
+                }
             })
             .transpose()?;
 
-        let (current_display, idx) = self.find_node(name)?;
-
-        if let Some(target_display) = new_display
-            && target_display != current_display
-        {
-            let mut node = self.nodes.get_mut(&current_display).unwrap().remove(idx);
-            node.display = target_display;
-            Self::apply_properties(&mut node, properties)?;
-            let display_nodes = self.nodes.entry(target_display).or_default();
-            display_nodes.push(node.clone());
-            display_nodes.sort_by_key(|n| n.position);
-            return Ok(node);
+        match display_change {
+            Some(target_opt) => {
+                let (explicit, target_display) = match target_opt {
+                    Some(id) => (true, id),
+                    None => (false, crate::main_display_id()),
+                };
+                let (current_display, idx) = self.find_node(name)?;
+                if target_display != current_display {
+                    let mut node = self.nodes.get_mut(&current_display).unwrap().remove(idx);
+                    node.display = target_display;
+                    node.display_explicit = explicit;
+                    Self::apply_properties(&mut node, properties)?;
+                    let display_nodes = self.nodes.entry(target_display).or_default();
+                    display_nodes.push(node.clone());
+                    display_nodes.sort_by_key(|n| n.position);
+                    return Ok(node);
+                }
+                let nodes = self.nodes.get_mut(&current_display).unwrap();
+                let node = &mut nodes[idx];
+                node.display_explicit = explicit;
+                Self::apply_properties(node, properties)?;
+                let updated = node.clone();
+                nodes.sort_by_key(|n| n.position);
+                Ok(updated)
+            }
+            None => {
+                let (current_display, _idx) = self.find_node(name)?;
+                let nodes = self.nodes.get_mut(&current_display).unwrap();
+                let node = nodes.iter_mut().find(|n| n.name == name).unwrap();
+                Self::apply_properties(node, properties)?;
+                let updated = node.clone();
+                nodes.sort_by_key(|n| n.position);
+                Ok(updated)
+            }
         }
-
-        let nodes = self.nodes.get_mut(&current_display).unwrap();
-        let node = &mut nodes[idx];
-        Self::apply_properties(node, properties)?;
-        let updated = node.clone();
-        nodes.sort_by_key(|n| n.position);
-        Ok(updated)
     }
 
     fn apply_properties(
@@ -293,6 +315,60 @@ impl BarState {
             }
         }
         None
+    }
+
+    pub fn migrate_nodes(&mut self, from_display: u32, to_display: u32) -> Vec<BarNode> {
+        let Some(nodes) = self.nodes.get_mut(&from_display) else {
+            return vec![];
+        };
+
+        let mut staying_names: std::collections::HashSet<String> = nodes
+            .iter()
+            .filter(|n| n.display_explicit)
+            .map(|n| n.name.clone())
+            .collect();
+
+        loop {
+            let mut changed = false;
+            for node in nodes.iter() {
+                if staying_names.contains(&node.name) {
+                    continue;
+                }
+                if let Some(ref parent) = node.parent
+                    && staying_names.contains(parent)
+                {
+                    staying_names.insert(node.name.clone());
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+
+        let mut migrate = vec![];
+        nodes.retain(|node| {
+            if staying_names.contains(&node.name) {
+                true
+            } else {
+                migrate.push(node.clone());
+                false
+            }
+        });
+
+        for node in &mut migrate {
+            node.display = to_display;
+        }
+
+        if nodes.is_empty() {
+            self.nodes.remove(&from_display);
+        }
+
+        let target = self.nodes.entry(to_display).or_default();
+        target.extend(migrate.iter().cloned());
+        target.sort_by_key(|n| n.position);
+
+        migrate
     }
 
     pub fn get_nodes(&self) -> Vec<BarNode> {

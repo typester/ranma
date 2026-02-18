@@ -10,5 +10,8 @@
 /app/Sources/CRanmaCore/include/
 /app/Sources/CRanmaCore/module.modulemap
 
+# Python
+__pycache__/
+
 # macOS
 .DS_Store

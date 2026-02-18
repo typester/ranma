@@ -82,6 +82,24 @@ Fully transparent theme that blends seamlessly with the macOS menu bar. No backg
 
 ---
 
+## Image Feature Demos
+
+The following examples demonstrate ranma's image rendering capabilities (`--image`, `--image-scale`, tiling).
+
+### Progress Bar
+
+CPU usage visualized as a tiling progress bar. A 1px-wide solid-color PNG is tiled across a variable width proportional to CPU usage. Color-coded: green (normal), orange (moderate), red (high). Updates every 2 seconds.
+
+**Prerequisites:** Python 3
+
+### Pixel Runner
+
+Animated pixel-art character in the status bar. Four 7×8 pixel-art frames are generated at startup and cycled at ~150ms intervals to create a running animation. Demonstrates frame-by-frame `--image` updates with `--image-scale` for crisp pixel art.
+
+**Prerequisites:** Python 3
+
+---
+
 ## All
 
 ![all](../assets/statusbar-all.png)

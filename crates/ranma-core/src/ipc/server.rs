@@ -95,6 +95,8 @@ fn handle_command(input: &str) -> Response {
             hover_label_color,
             hover_icon_color,
             on_click,
+            image,
+            image_scale,
             position,
             display,
         } => {
@@ -130,6 +132,8 @@ fn handle_command(input: &str) -> Response {
                 font_weight,
                 font_family,
                 on_click,
+                image,
+                image_scale,
                 position: position.unwrap_or(0),
                 display,
                 display_explicit,

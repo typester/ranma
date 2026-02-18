@@ -202,6 +202,14 @@ struct AddCmd {
     #[argh(option)]
     on_click: Option<String>,
 
+    /// image file path (PNG, JPEG, etc.)
+    #[argh(option)]
+    image: Option<String>,
+
+    /// image scale factor (e.g. 2.0 for pixel art)
+    #[argh(option)]
+    image_scale: Option<f32>,
+
     /// sort position
     #[argh(option)]
     position: Option<i32>,
@@ -370,6 +378,14 @@ struct SetCmd {
     /// shell command to run on click
     #[argh(option)]
     on_click: Option<String>,
+
+    /// image file path (PNG, JPEG, etc.)
+    #[argh(option)]
+    image: Option<String>,
+
+    /// image scale factor (e.g. 2.0 for pixel art)
+    #[argh(option)]
+    image_scale: Option<f32>,
 
     /// sort position
     #[argh(option)]
@@ -582,6 +598,12 @@ fn build_command(cmd: Command) -> Value {
             if let Some(v) = c.on_click {
                 obj["on_click"] = json!(v);
             }
+            if let Some(v) = c.image {
+                obj["image"] = json!(v);
+            }
+            if let Some(v) = c.image_scale {
+                obj["image_scale"] = json!(v);
+            }
             if let Some(v) = c.position {
                 obj["position"] = json!(v);
             }
@@ -705,6 +727,12 @@ fn build_command(cmd: Command) -> Value {
             }
             if let Some(v) = c.on_click {
                 properties.insert("on_click".into(), v);
+            }
+            if let Some(v) = c.image {
+                properties.insert("image".into(), v);
+            }
+            if let Some(v) = c.image_scale {
+                properties.insert("image_scale".into(), v.to_string());
             }
             if let Some(v) = c.position {
                 properties.insert("position".into(), v.to_string());

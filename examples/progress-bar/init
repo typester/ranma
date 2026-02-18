@@ -1,0 +1,15 @@
+#!/bin/zsh
+
+# CPU progress bar plugin for ranma.
+# Demonstrates image tiling: a 1px-wide image is tiled across a variable width.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - reap (brew install typester/reap/reap)
+
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="$PATH:/opt/homebrew/bin"
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/progress_bar.py" &

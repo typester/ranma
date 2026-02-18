@@ -13,7 +13,9 @@
 
 - **ALWAYS re-read CLAUDE.md before starting any task.** This ensures you follow the latest project rules and conventions.
 - **ALWAYS plan before coding.** Unless explicitly instructed otherwise, use plan mode to propose changes and get user approval before editing any files.
+- **When writing a plan file in plan mode, the first step MUST always be "Step 0: Re-read CLAUDE.md and verify all workflow rules."** This step must appear in the plan file itself, not just be done mentally. No plan is complete without it.
 - Do NOT start writing or editing code without a plan approved by the user.
+- **When the user reports a problem with generated output**, investigate the issue first, then propose a fix via plan mode. Do NOT edit any files until the fix plan is approved by the user. This applies equally to bug reports, visual issues, and any other feedback on previously generated code.
 
 ## Code Style
 

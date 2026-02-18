@@ -52,6 +52,8 @@ pub struct BarNode {
     pub font_weight: Option<String>,
     pub font_family: Option<String>,
     pub on_click: Option<String>,
+    pub image: Option<String>,
+    pub image_scale: Option<f32>,
 }
 
 #[derive(Debug, Default)]
@@ -250,6 +252,14 @@ impl BarState {
                 "hover_label_color" => node.style.hover_label_color = optional_str(value),
                 "hover_icon_color" => node.style.hover_icon_color = optional_str(value),
                 "on_click" => node.on_click = optional_str(value),
+                "image" => node.image = optional_str(value),
+                "image_scale" => {
+                    node.image_scale = if value.is_empty() {
+                        None
+                    } else {
+                        Some(parse_f32("image_scale", value)?)
+                    };
+                }
                 "border_width" => {
                     node.style.border_width = Some(parse_f32("border_width", value)?);
                 }
@@ -420,6 +430,8 @@ mod tests {
             font_weight: None,
             font_family: None,
             on_click: None,
+            image: None,
+            image_scale: None,
         }
     }
 

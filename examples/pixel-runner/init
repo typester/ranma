@@ -1,0 +1,15 @@
+#!/bin/zsh
+
+# Pixel art runner animation plugin for ranma.
+# Demonstrates frame-by-frame image animation with --image-scale.
+#
+# Prerequisites:
+#   - python3 (macOS built-in)
+#   - reap (brew install typester/reap/reap)
+
+# Homebrew PATH (not needed if already set in ~/.zshenv)
+export PATH="$PATH:/opt/homebrew/bin"
+
+SCRIPT_DIR="${0:A:h}"
+
+reap --watch $PPID "$SCRIPT_DIR/plugins/pixel_runner.py" &

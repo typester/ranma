@@ -93,7 +93,26 @@ impl BarState {
             if let Some(pos) = nodes.iter().position(|n| n.name == name) {
                 let node = nodes.remove(pos);
                 if !matches!(node.node_type, NodeType::Item) {
-                    nodes.retain(|n| n.parent.as_deref() != Some(name));
+                    // Recursively collect all descendant names (transitive closure)
+                    let mut removed_names: std::collections::HashSet<String> =
+                        std::collections::HashSet::new();
+                    removed_names.insert(name.to_string());
+                    loop {
+                        let mut changed = false;
+                        for n in nodes.iter() {
+                            if let Some(ref parent) = n.parent
+                                && removed_names.contains(parent.as_str())
+                                && !removed_names.contains(&n.name)
+                            {
+                                removed_names.insert(n.name.clone());
+                                changed = true;
+                            }
+                        }
+                        if !changed {
+                            break;
+                        }
+                    }
+                    nodes.retain(|n| !removed_names.contains(&n.name));
                 }
                 return Ok(node);
             }
@@ -377,5 +396,142 @@ impl BarState {
 
     pub fn get_nodes_for_display(&self, display: u32) -> Vec<BarNode> {
         self.nodes.get(&display).cloned().unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_node(name: &str, node_type: NodeType, parent: Option<&str>, display: u32) -> BarNode {
+        BarNode {
+            name: name.to_string(),
+            node_type,
+            parent: parent.map(|s| s.to_string()),
+            position: 0,
+            display,
+            display_explicit: false,
+            style: NodeStyle::default(),
+            label: None,
+            label_color: None,
+            icon: None,
+            icon_color: None,
+            font_size: None,
+            font_weight: None,
+            font_family: None,
+            on_click: None,
+        }
+    }
+
+    #[test]
+    fn remove_item_node() {
+        let mut state = BarState::default();
+        state
+            .add_node(make_node("item1", NodeType::Item, None, 1))
+            .unwrap();
+
+        let removed = state.remove_node("item1").unwrap();
+        assert_eq!(removed.name, "item1");
+        assert!(state.get_nodes().is_empty());
+    }
+
+    #[test]
+    fn remove_nonexistent_node() {
+        let mut state = BarState::default();
+        let result = state.remove_node("ghost");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("not found"));
+    }
+
+    #[test]
+    fn remove_container_without_children() {
+        let mut state = BarState::default();
+        state
+            .add_node(make_node("row1", NodeType::Row, None, 1))
+            .unwrap();
+
+        let removed = state.remove_node("row1").unwrap();
+        assert_eq!(removed.name, "row1");
+        assert!(state.get_nodes().is_empty());
+    }
+
+    #[test]
+    fn remove_container_with_direct_children() {
+        let mut state = BarState::default();
+        state
+            .add_node(make_node("row1", NodeType::Row, None, 1))
+            .unwrap();
+        state
+            .add_node(make_node("child1", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+        state
+            .add_node(make_node("child2", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+
+        let removed = state.remove_node("row1").unwrap();
+        assert_eq!(removed.name, "row1");
+        assert!(state.get_nodes().is_empty());
+    }
+
+    #[test]
+    fn remove_container_with_deep_nesting() {
+        let mut state = BarState::default();
+        // root -> col1 -> row1 -> item1
+        state
+            .add_node(make_node("root", NodeType::Column, None, 1))
+            .unwrap();
+        state
+            .add_node(make_node("col1", NodeType::Column, Some("root"), 1))
+            .unwrap();
+        state
+            .add_node(make_node("row1", NodeType::Row, Some("col1"), 1))
+            .unwrap();
+        state
+            .add_node(make_node("item1", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+
+        let removed = state.remove_node("root").unwrap();
+        assert_eq!(removed.name, "root");
+        assert!(state.get_nodes().is_empty());
+    }
+
+    #[test]
+    fn remove_container_leaves_unrelated_nodes() {
+        let mut state = BarState::default();
+        state
+            .add_node(make_node("row1", NodeType::Row, None, 1))
+            .unwrap();
+        state
+            .add_node(make_node("child1", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+        state
+            .add_node(make_node("unrelated", NodeType::Item, None, 1))
+            .unwrap();
+
+        state.remove_node("row1").unwrap();
+
+        let remaining: Vec<String> = state.get_nodes().into_iter().map(|n| n.name).collect();
+        assert_eq!(remaining, vec!["unrelated"]);
+    }
+
+    #[test]
+    fn remove_item_does_not_cascade() {
+        let mut state = BarState::default();
+        state
+            .add_node(make_node("row1", NodeType::Row, None, 1))
+            .unwrap();
+        state
+            .add_node(make_node("sibling1", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+        state
+            .add_node(make_node("sibling2", NodeType::Item, Some("row1"), 1))
+            .unwrap();
+
+        state.remove_node("sibling1").unwrap();
+
+        let remaining: Vec<String> = state.get_nodes().into_iter().map(|n| n.name).collect();
+        assert!(remaining.contains(&"row1".to_string()));
+        assert!(remaining.contains(&"sibling2".to_string()));
+        assert_eq!(remaining.len(), 2);
     }
 }

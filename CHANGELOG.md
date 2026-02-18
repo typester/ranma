@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/typester/ranma/compare/v0.1.6...v0.1.7) (2026-02-18)
+
+
+### Bug Fixes
+
+* remove_node now recursively removes all descendants (transitive closure) ([#17](https://github.com/typester/ranma/issues/17)) ([1193645](https://github.com/typester/ranma/commit/11936452e1e6ae7c581c80f5caaf6fedd98d32e7))
+
 ## [0.1.6](https://github.com/typester/ranma/compare/v0.1.5...v0.1.6) (2026-02-17)
 
 

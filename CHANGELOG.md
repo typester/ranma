@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/typester/ranma/compare/v0.1.7...v0.1.8) (2026-02-18)
+
+
+### Features
+
+* add image rendering support with file-based image cache ([#19](https://github.com/typester/ranma/issues/19)) ([a632da0](https://github.com/typester/ranma/commit/a632da08a2a6a34f85163751b167a9116cd35339))
+
 ## [0.1.7](https://github.com/typester/ranma/compare/v0.1.6...v0.1.7) (2026-02-18)
 
 

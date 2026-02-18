@@ -88,6 +88,10 @@ pub enum Command {
         #[serde(default)]
         on_click: Option<String>,
         #[serde(default)]
+        image: Option<String>,
+        #[serde(default)]
+        image_scale: Option<f32>,
+        #[serde(default)]
         position: Option<i32>,
         #[serde(default)]
         display: Option<u32>,
@@ -153,6 +157,8 @@ pub struct NodeDto {
     pub hover_label_color: Option<String>,
     pub hover_icon_color: Option<String>,
     pub on_click: Option<String>,
+    pub image: Option<String>,
+    pub image_scale: Option<f32>,
     pub font_size: Option<f32>,
     pub font_weight: Option<String>,
     pub font_family: Option<String>,
@@ -200,6 +206,8 @@ impl From<BarNode> for NodeDto {
             hover_label_color: node.style.hover_label_color,
             hover_icon_color: node.style.hover_icon_color,
             on_click: node.on_click,
+            image: node.image,
+            image_scale: node.image_scale,
             font_size: node.font_size,
             font_weight: node.font_weight,
             font_family: node.font_family,

@@ -105,6 +105,13 @@ enum WindowSizer {
             contentWidth += configured.size.width
         }
 
+        if let imagePath = node.image,
+           let img = ImageCache.shared.image(for: imagePath) {
+            let scale = CGFloat(node.imageScale ?? 1.0)
+            if contentWidth > 0 { contentWidth += iconLabelGap }
+            contentWidth += img.size.width * scale
+        }
+
         if let label = node.label {
             let attrs: [NSAttributedString.Key: Any] = [.font: font]
             let size = (label as NSString).size(withAttributes: attrs)
@@ -115,7 +122,14 @@ enum WindowSizer {
         let pl = CGFloat(node.style.paddingLeft ?? 0)
         let pr = CGFloat(node.style.paddingRight ?? 0)
         let w = node.style.width.map { CGFloat($0) } ?? (pl + contentWidth + pr)
-        let h = node.style.height.map { CGFloat($0) } ?? font.pointSize + 4
+
+        var contentHeight = font.pointSize + 4
+        if let imagePath = node.image,
+           let img = ImageCache.shared.image(for: imagePath) {
+            let scale = CGFloat(node.imageScale ?? 1.0)
+            contentHeight = max(contentHeight, img.size.height * scale)
+        }
+        let h = node.style.height.map { CGFloat($0) } ?? contentHeight
 
         return CGSize(width: ml + w + mr, height: mt + h + mb)
     }

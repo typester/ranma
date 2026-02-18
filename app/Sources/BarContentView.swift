@@ -293,6 +293,58 @@ class BarContentView: NSView {
             tinted.draw(in: imageRect)
             currentX += imageSize.width
 
+            if node.label != nil || node.image != nil {
+                currentX += iconLabelGap
+            }
+        }
+
+        if let imagePath = node.image,
+           let img = ImageCache.shared.image(for: imagePath) {
+            let scale = CGFloat(node.imageScale ?? 1.0)
+            let scaledWidth = img.size.width * scale
+            let scaledHeight = img.size.height * scale
+
+            let gfxCtx = NSGraphicsContext.current
+            let prevInterpolation = gfxCtx?.imageInterpolation
+            gfxCtx?.imageInterpolation = .none
+
+            if let explicitWidth = node.style.width, CGFloat(explicitWidth) > scaledWidth {
+                let tileStartX = currentX - contentOffset
+                let rightEdge = itemX + itemWidth - pr
+                let tileAreaWidth = rightEdge - tileStartX
+                var tx: CGFloat = 0
+                while tx < tileAreaWidth {
+                    let remaining = tileAreaWidth - tx
+                    let drawWidth = min(scaledWidth, remaining)
+                    let srcWidth = drawWidth / scale
+                    let destRect = NSRect(
+                        x: tileStartX + tx,
+                        y: centerY - scaledHeight / 2,
+                        width: drawWidth,
+                        height: scaledHeight
+                    )
+                    let srcRect = NSRect(
+                        x: 0, y: 0,
+                        width: srcWidth,
+                        height: img.size.height
+                    )
+                    img.draw(in: destRect, from: srcRect, operation: .sourceOver, fraction: 1.0)
+                    tx += scaledWidth
+                }
+                currentX = rightEdge
+            } else {
+                let destRect = NSRect(
+                    x: currentX,
+                    y: centerY - scaledHeight / 2,
+                    width: scaledWidth,
+                    height: scaledHeight
+                )
+                img.draw(in: destRect, from: NSRect(origin: .zero, size: img.size), operation: .sourceOver, fraction: 1.0)
+                currentX += scaledWidth
+            }
+
+            gfxCtx?.imageInterpolation = prevInterpolation ?? .default
+
             if node.label != nil {
                 currentX += iconLabelGap
             }
@@ -326,6 +378,13 @@ class BarContentView: NSView {
             let config = NSImage.SymbolConfiguration(pointSize: WindowSizer.iconSizeForNode(node), weight: .medium)
             let configured = image.withSymbolConfiguration(config) ?? image
             width += configured.size.width
+        }
+
+        if let imagePath = node.image,
+           let img = ImageCache.shared.image(for: imagePath) {
+            let scale = CGFloat(node.imageScale ?? 1.0)
+            if width > 0 { width += iconLabelGap }
+            width += img.size.width * scale
         }
 
         if let label = node.label {

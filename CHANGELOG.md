@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/typester/ranma/compare/v0.1.8...v0.1.9) (2026-02-19)
+
+
+### Bug Fixes
+
+* use CGMainDisplayID() instead of NSScreen.main for primary display detection ([#21](https://github.com/typester/ranma/issues/21)) ([41efff4](https://github.com/typester/ranma/commit/41efff4d97b3577972ee90443450faac56533a93))
+
 ## [0.1.8](https://github.com/typester/ranma/compare/v0.1.7...v0.1.8) (2026-02-18)
 
 

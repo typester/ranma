@@ -452,7 +452,7 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "ranma-cli"
-version = "0.1.6"
+version = "0.1.8"
 dependencies = [
  "argh",
  "libc",
@@ -462,7 +462,7 @@ dependencies = [
 
 [[package]]
 name = "ranma-core"
-version = "0.1.6"
+version = "0.1.8"
 dependencies = [
  "parking_lot",
  "serde",
@@ -737,7 +737,7 @@ dependencies = [
 
 [[package]]
 name = "uniffi-bindgen"
-version = "0.1.6"
+version = "0.1.8"
 dependencies = [
  "uniffi",
 ]

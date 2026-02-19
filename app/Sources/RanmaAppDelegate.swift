@@ -50,7 +50,7 @@ class RanmaAppDelegate: NSObject, NSApplicationDelegate {
             DisplayInfo(
                 id: screen.displayID,
                 name: screen.localizedName,
-                isMain: screen == NSScreen.main
+                isMain: screen.displayID == CGMainDisplayID()
             )
         }
         setDisplays(displays: displays)

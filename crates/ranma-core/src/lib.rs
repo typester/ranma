@@ -64,10 +64,6 @@ pub fn set_displays(displays: Vec<DisplayInfo>) {
         .filter(|id| !new_ids.contains(id))
         .collect();
 
-    if removed.is_empty() {
-        return;
-    }
-
     let new_main = main_display_id();
     if new_main == 0 {
         return;
@@ -76,10 +72,26 @@ pub fn set_displays(displays: Vec<DisplayInfo>) {
     let mut events = Vec::new();
     {
         let mut state = get_state().lock();
+
         for &old_display in &removed {
             for node in state.migrate_nodes(old_display, new_main) {
                 events.push(StateChangeEvent::NodeMoved {
                     old_display,
+                    new_display: new_main,
+                    node,
+                });
+            }
+        }
+
+        let non_main: Vec<u32> = new_ids
+            .iter()
+            .copied()
+            .filter(|&id| id != new_main)
+            .collect();
+        for display in non_main {
+            for node in state.migrate_nodes(display, new_main) {
+                events.push(StateChangeEvent::NodeMoved {
+                    old_display: display,
                     new_display: new_main,
                     node,
                 });

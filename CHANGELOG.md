@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/typester/ranma/compare/v0.1.9...v0.1.10) (2026-02-25)
+
+
+### Bug Fixes
+
+* migrate implicit nodes back to main display on display change ([#23](https://github.com/typester/ranma/issues/23)) ([94fc50c](https://github.com/typester/ranma/commit/94fc50c57b4c9d62f68dd97cfa3c41dad28046a6))
+
 ## [0.1.9](https://github.com/typester/ranma/compare/v0.1.8...v0.1.9) (2026-02-19)
 
 

@@ -19,33 +19,44 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
     private var fullscreenDisplays: Set<UInt32> = []
 
     func onStateChange(event: StateChangeEvent) throws {
-        DispatchQueue.main.async { [self] in
-            switch event {
-            case let .nodeAdded(display, node):
-                nodes[display, default: []].append(node)
-                scheduleRefresh(display)
-
-            case let .nodeRemoved(display, _):
-                let updated = getNodesForDisplay(display: display)
-                nodes[display] = updated
-                scheduleRefresh(display)
-
-            case let .nodeUpdated(display, node):
-                if let idx = nodes[display]?.firstIndex(where: { $0.name == node.name }) {
-                    nodes[display]?[idx] = node
-                }
-                scheduleRefresh(display)
-
-            case let .nodeMoved(oldDisplay, newDisplay, node):
-                nodes[oldDisplay]?.removeAll { $0.name == node.name }
-                scheduleRefresh(oldDisplay)
-                nodes[newDisplay, default: []].append(node)
-                scheduleRefresh(newDisplay)
-
-            case let .fullRefresh(display, newNodes):
-                nodes[display] = newNodes
-                scheduleRefresh(display)
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                handleEvent(event)
             }
+        } else {
+            DispatchQueue.main.async { [self] in
+                handleEvent(event)
+            }
+        }
+    }
+
+    @MainActor
+    private func handleEvent(_ event: StateChangeEvent) {
+        switch event {
+        case let .nodeAdded(display, node):
+            nodes[display, default: []].append(node)
+            scheduleRefresh(display)
+
+        case let .nodeRemoved(display, _):
+            let updated = getNodesForDisplay(display: display)
+            nodes[display] = updated
+            scheduleRefresh(display)
+
+        case let .nodeUpdated(display, node):
+            if let idx = nodes[display]?.firstIndex(where: { $0.name == node.name }) {
+                nodes[display]?[idx] = node
+            }
+            scheduleRefresh(display)
+
+        case let .nodeMoved(oldDisplay, newDisplay, node):
+            nodes[oldDisplay]?.removeAll { $0.name == node.name }
+            scheduleRefresh(oldDisplay)
+            nodes[newDisplay, default: []].append(node)
+            scheduleRefresh(newDisplay)
+
+        case let .fullRefresh(display, newNodes):
+            nodes[display] = newNodes
+            scheduleRefresh(display)
         }
     }
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.11](https://github.com/typester/ranma/compare/v0.1.10...v0.1.11) (2026-02-27)
+
+
+### Features
+
+* add version subcommand to CLI ([#26](https://github.com/typester/ranma/issues/26)) ([9c253e5](https://github.com/typester/ranma/commit/9c253e5ad0de216735d0ac68d3564a583013a11c))
+
+
+### Bug Fixes
+
+* process state change events synchronously on main thread ([#25](https://github.com/typester/ranma/issues/25)) ([61b9f6e](https://github.com/typester/ranma/commit/61b9f6e65e88b087c17819d38954d0a62230e2da))
+
 ## [0.1.10](https://github.com/typester/ranma/compare/v0.1.9...v0.1.10) (2026-02-25)
 
 

@@ -23,6 +23,7 @@ enum Command {
     Query(QueryCmd),
     Displays(DisplaysCmd),
     Tree(TreeCmd),
+    Version(VersionCmd),
 }
 
 /// start the ranma server
@@ -423,6 +424,11 @@ struct QueryCmd {
 #[argh(subcommand, name = "displays")]
 struct DisplaysCmd {}
 
+/// print version
+#[derive(FromArgs)]
+#[argh(subcommand, name = "version")]
+struct VersionCmd {}
+
 /// display node tree
 #[derive(FromArgs)]
 #[argh(subcommand, name = "tree")]
@@ -437,6 +443,11 @@ fn main() {
 
     if let Command::Start(cmd) = args.command {
         exec_server(cmd);
+        return;
+    }
+
+    if let Command::Version(_) = args.command {
+        println!("v{}", env!("CARGO_PKG_VERSION"));
         return;
     }
 
@@ -749,7 +760,7 @@ fn build_command(cmd: Command) -> Value {
         Command::Remove(c) => json!({ "command": "remove", "name": c.name }),
         Command::Query(c) => json!({ "command": "query", "name": c.name, "display": c.display }),
         Command::Displays(_) => json!({ "command": "displays" }),
-        Command::Tree(_) => unreachable!(),
+        Command::Tree(_) | Command::Version(_) => unreachable!(),
     }
 }
 

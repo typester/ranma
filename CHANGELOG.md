@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/typester/ranma/compare/v0.1.11...v0.1.12) (2026-05-07)
+
+
+### Bug Fixes
+
+* guard against nil CFUUIDCreateString result in detectFullscreenDisplays ([#28](https://github.com/typester/ranma/issues/28)) ([5e23e11](https://github.com/typester/ranma/commit/5e23e11a4752628340fbb355667b18c576fd083e))
+
 ## [0.1.11](https://github.com/typester/ranma/compare/v0.1.10...v0.1.11) (2026-02-27)
 
 

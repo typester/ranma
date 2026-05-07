@@ -207,7 +207,7 @@ final class BarViewModel: StateChangeHandler, @unchecked Sendable {
         for screen in NSScreen.screens {
             let displayID = screen.displayID
             let uuid = CGDisplayCreateUUIDFromDisplayID(displayID).takeRetainedValue()
-            let uuidString = CFUUIDCreateString(nil, uuid) as CFString
+            guard let uuidString = CFUUIDCreateString(nil, uuid) else { continue }
 
             let spaceID = SLSManagedDisplayGetCurrentSpace(cid, uuidString)
             if spaceID != 0 && SLSSpaceGetType(cid, spaceID) == 4 {

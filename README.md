@@ -59,7 +59,7 @@ This produces two binaries:
 Start the server with an init script:
 
 ```sh
-ranma-server start --init ./examples/unified/init
+ranma start --init ./examples/unified/init
 ```
 
 The init script launches widget processes that use the `ranma` CLI to add and update status bar items.

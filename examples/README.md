@@ -3,7 +3,7 @@
 Example widgets demonstrating ranma's capabilities. Each example can be used as an init script:
 
 ```sh
-ranma-server start --init ./examples/<name>/init
+ranma start --init ./examples/<name>/init
 ```
 
 You can also run an init script directly while ranma-server is already running, to add widgets to the existing session:
